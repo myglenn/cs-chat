@@ -1,0 +1,43 @@
+<th:block th:fragment="sidebarFragment">
+    <!-- 사이드바 (PC) -->
+    <aside id="sidebar" class="sidebar">
+        <nav class="sidebar-nav">
+            <a th:if="${userRole != null and (userRole.contains('SUPER_ADMIN') or userRole.contains('OPERATOR'))}"  th:href="@{/agency}" class="sidebar-item" data-page="agency">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>
+                대리점 관리
+            </a>
+            <a th:if="${userRole != null and (userRole.contains('SUPER_ADMIN'))}" th:href="@{/user}" class="sidebar-item" data-page="user">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                사원 관리
+            </a>
+            <a th:href="@{/consultation}" class="sidebar-item" data-page="consultation">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                상담창구 관리
+            </a>
+        </nav>
+    </aside>
+
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+    <aside id="sidebarMobile" class="sidebar-mobile">
+        <div class="sidebar-header">
+            <h2 class="sidebar-title">demo</h2>
+            <button class="header-btn" id="closeSidebar" aria-label="닫기">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+            </button>
+        </div>
+        <nav class="sidebar-nav-mobile">
+            <a  th:if="${userRole != null and (userRole.contains('SUPER_ADMIN') or userRole.contains('OPERATOR'))}" th:href="@{/agency}" class="sidebar-item-mobile" data-page="agency">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>
+                대리점 관리
+            </a>
+            <a th:if="${userRole != null and (userRole.contains('SUPER_ADMIN'))}" th:href="@{/user}" class="sidebar-item-mobile" data-page="user">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                사원 관리
+            </a>
+            <a th:href="@{/consultation}" class="sidebar-item-mobile" data-page="consultation">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                상담창구 관리
+            </a>
+        </nav>
+    </aside>
+</th:block>

@@ -1,0 +1,131 @@
+### =================================================
+### API 테스트를 위한 변수 설정
+### =================================================
+#-- 서버 주소 (로컬 환경) --#
+@baseUrl = http://localhost:8080
+
+#-- 토큰 변수 (로그인 후 자동으로 채워짐) --#
+@superAdminAccessToken =
+@agencyAdminAccessToken =
+
+
+### =================================================
+### 1. 인증 API (Authentication)
+### =================================================
+
+### [SUPER_ADMIN] 로그인
+### @name loginSuperAdmin: 이 요청을 실행하면 응답 body의 accessToken 값을 @superAdminAccessToken 변수에 저장합니다.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "loginId": "admin",
+  "password": "password123"
+}
+> {% client.global.set("superAdminAccessToken", response.body.accessToken); %}
+
+### [AGENCY_ADMIN] 로그인
+### @name loginAgencyAdmin: 이 요청을 실행하면 응답 body의 accessToken 값을 @agencyAdminAccessToken 변수에 저장합니다.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "loginId": "agency",
+  "password": "your_agency_admin_password"
+}
+> {% client.global.set("agencyAdminAccessToken", response.body.accessToken); %}
+
+
+### =================================================
+### 2. 일반 사용자 API (UsrController)
+### =================================================
+
+### 내 정보 조회
+# SUPER_ADMIN 또는 AGENCY_ADMIN으로 로그인 후 테스트 가능합니다.
+GET {{baseUrl}}/api/user/me
+Authorization: Bearer {{superAdminAccessToken}}
+
+
+### =================================================
+### 3. 최고 관리자(SUPER_ADMIN) API (UsrAdmController)
+### =================================================
+# (반드시 [SUPER_ADMIN] 로그인 먼저 실행!)
+
+### [ADMIN] 모든 사용자 목록 조회 (페이징 및 검색)
+GET {{baseUrl}}/api/adm/users?page=0&size=5&role=AGENCY_REP
+Authorization: Bearer {{superAdminAccessToken}}
+
+### [ADMIN] 신규 사용자 생성
+POST {{baseUrl}}/api/adm/users
+Content-Type: application/json
+Authorization: Bearer {{superAdminAccessToken}}
+
+{
+  "loginId": "new_rep_id",
+  "password": "password123",
+  "name": "신규대리점직원",
+  "email": "rep@test.com",
+  "role": "AGENCY_REP",
+  "agcId": 1
+}
+
+### [ADMIN] 특정 사용자 상세 조회 (ID: 2)
+GET {{baseUrl}}/api/adm/users/2
+Authorization: Bearer {{superAdminAccessToken}}
+
+### [ADMIN] 사용자 정보 수정 (ID: 2)
+PUT {{baseUrl}}/api/adm/users/2
+Content-Type: application/json
+Authorization: Bearer {{superAdminAccessToken}}
+
+{
+  "name": "이름수정됨",
+  "email": "edited@test.com",
+  "role": "AGENCY_ADMIN",
+  "agcId": 1
+}
+
+### [ADMIN] 사용자 삭제 (ID: 2)
+DELETE {{baseUrl}}/api/adm/users/2
+Authorization: Bearer {{superAdminAccessToken}}
+
+
+### =================================================
+### 4. 대리점 관리자(AGENCY_ADMIN) API (UsrAgcController)
+### =================================================
+# (반드시 [AGENCY_ADMIN] 로그인 먼저 실행!)
+
+### [AGENCY] 내 대리점 직원 목록 조회
+GET {{baseUrl}}/api/agc/users?page=0&size=5
+Authorization: Bearer {{agencyAdminAccessToken}}
+
+### [AGENCY] 내 대리점 직원 생성
+POST {{baseUrl}}/api/agc/users
+Content-Type: application/json
+Authorization: Bearer {{agencyAdminAccessToken}}
+
+{
+  "loginId": "my_agency_user",
+  "password": "password123",
+  "name": "우리대리점직원",
+  "email": "my@agency.com"
+}
+
+### [AGENCY] 내 대리점 직원 상세 조회 (ID: 3)
+# (주의: ID 3번 유저가 이 대리점 소속일 때만 성공)
+GET {{baseUrl}}/api/agc/users/3
+Authorization: Bearer {{agencyAdminAccessToken}}
+
+### [AGENCY] 내 대리점 직원 정보 수정 (ID: 3)
+PUT {{baseUrl}}/api/agc/users/3
+Content-Type: application/json
+Authorization: Bearer {{agencyAdminAccessToken}}
+
+{
+  "name": "직원이름수정",
+  "email": "edited@agency.com"
+}
+
+### [AGENCY] 내 대리점 직원 삭제 (ID: 3)
+DELETE {{baseUrl}}/api/agc/users/3
+Authorization: Bearer {{agencyAdminAccessToken}}

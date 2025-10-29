@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.enjoy.api.mapper.ChnUsrReadStatusMapper">
+
+    <select id="findLastReadMsgIdsByUser" resultType="map"> SELECT
+        CHN_ID AS mapKey,          LAST_READ_MSG_ID AS mapValue FROM CHN_USR_READ_STATUS
+        WHERE USR_ID = #{userId}
+        AND CHN_ID IN
+        <foreach item="chnId" collection="chnIds" open="(" separator="," close=")">
+            #{chnId}
+        </foreach>
+    </select>
+
+    <select id="countUnreadMessages" resultType="long">
+        SELECT COUNT(*)
+        FROM MSG
+        WHERE CHN_ID = #{chnId}
+          AND ID > #{lastReadMsgId}
+    </select>
+
+    <select id="findLastMsgIdByChnId" resultType="long">
+        SELECT MAX(ID)
+        FROM MSG
+        WHERE CHN_ID = #{chnId}
+    </select>
+
+    <insert id="upsertReadStatus">
+        INSERT INTO CHN_USR_READ_STATUS (CHN_ID, USR_ID, LAST_READ_MSG_ID, LAST_READ_DT)
+        VALUES (#{chnId}, #{userId}, #{lastReadMsgId}, NOW())
+        ON DUPLICATE KEY UPDATE
+                             LAST_READ_MSG_ID = VALUES(LAST_READ_MSG_ID),
+                             LAST_READ_DT = VALUES(LAST_READ_DT)
+    </insert>
+
+</mapper>

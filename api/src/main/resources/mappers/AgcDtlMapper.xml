@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.enjoy.api.mapper.AgcDtlMapper">
+
+    <insert id="insert">
+        INSERT INTO AGC_DTL (AGC_ID, BIZ_NUM, EMAIL, ZIP_CODE, BASE_ADDR, DTL_ADDR, TEL, CEO)
+        VALUES (#{agcId}, #{bizNum}, #{email}, #{zipCode}, #{baseAddr}, #{dtlAddr}, #{tel}, #{ceo})
+    </insert>
+
+    <update id="update">
+        UPDATE AGC_DTL
+        <set>
+            <if test="bizNum != null">BIZ_NUM = #{bizNum},</if>
+            <if test="email != null">EMAIL = #{email},</if>
+            <if test="zipCode != null">ZIP_CODE = #{zipCode},</if>
+            <if test="baseAddr != null">BASE_ADDR = #{baseAddr},</if>
+            <if test="dtlAddr != null">DTL_ADDR = #{dtlAddr},</if>
+            <if test="tel != null">TEL = #{tel},</if>
+            <if test="ceo != null">CEO = #{ceo},</if>
+        </set>
+        WHERE AGC_ID = #{agcId}
+    </update>
+
+    <select id="findById" resultType="com.enjoy.common.domain.AgcDtl">
+        SELECT
+            AGC_ID,
+            BIZ_NUM,
+            EMAIL,
+            ZIP_CODE,
+            BASE_ADDR,
+            DTL_ADDR,
+            TEL,
+            CEO
+        FROM
+            AGC_DTL
+        WHERE
+            AGC_ID = #{agcId}
+    </select>
+
+</mapper>

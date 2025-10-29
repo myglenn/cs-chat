@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.enjoy.api.mapper.CmnSeqMapper">
+
+    <select id="findCurrentValueByName" resultType="long">
+        SELECT CURRENT_VALUE FROM CMN_SEQ WHERE NAME = #{name}
+    </select>
+
+    <insert id="insertSequence">
+        INSERT INTO CMN_SEQ (NAME, CURRENT_VALUE) VALUES (#{name}, #{value})
+    </insert>
+
+    <update id="incrementValueByName">
+        UPDATE CMN_SEQ SET CURRENT_VALUE = LAST_INSERT_ID(CURRENT_VALUE + 1) WHERE NAME = #{name}
+    </update>
+
+</mapper>

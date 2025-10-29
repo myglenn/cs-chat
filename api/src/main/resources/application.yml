@@ -1,0 +1,22 @@
+server:
+  port: 8080
+
+spring:
+  profiles:
+    active: local
+
+file:
+  upload-dir: /path/to/your/local/upload
+
+mybatis:
+  type-handlers-package: org.apache.ibatis.type.jsr310
+  configuration:
+    map-underscore-to-camel-case: true
+  mapper-locations: mappers/**/*.xml
+
+jwt:
+  secret: b2lpczNYSmZSZ0xnZEtXa2dHWndzdFV4aXZ1NU4xdWg=
+
+logging:
+  level:
+    org.springframework.security: DEBUG

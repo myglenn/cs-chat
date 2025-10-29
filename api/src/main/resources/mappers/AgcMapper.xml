@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.enjoy.api.mapper.AgcMapper">
+
+    <sql id="agcSearchFromWhere">
+        FROM AGC A
+        LEFT JOIN AGC_DTL D ON A.ID = D.AGC_ID
+        <where>
+            AND A.STATUS = 'ACTIVE'
+            <if test="condition.code != null and condition.code != ''">
+                AND A.CODE LIKE CONCAT('%', #{condition.code}, '%')
+            </if>
+            <if test="condition.name != null and condition.name != ''">
+                AND A.NAME LIKE CONCAT('%', #{condition.name}, '%')
+            </if>
+        </where>
+    </sql>
+
+    <insert id="insert" parameterType="com.enjoy.common.domain.Agc">
+        <selectKey keyProperty="id" resultType="long" order="BEFORE">
+            SELECT GET_NEXT_SEQ_VAL('AGC') AS ID
+        </selectKey>
+        INSERT INTO AGC (ID, CODE, NAME) VALUES (#{id}, #{code}, #{name})
+    </insert>
+    <update id="update">
+        UPDATE AGC
+        <set>
+            <if test="code != null">CODE = #{code},</if>
+            <if test="name != null">NAME = #{name},</if>
+            <if test="status != null">STATUS = #{status},</if>
+        </set>
+        WHERE ID = #{id}
+    </update>
+
+    <select id="findById" resultType="com.enjoy.common.domain.Agc">
+        SELECT * FROM AGC WHERE ID = #{id}
+    </select>
+
+    <select id="findFullInfoById" resultType="com.enjoy.common.dto.agc.AgcInfoDTO">
+        SELECT
+            *
+        FROM AGC A
+                 LEFT JOIN AGC_DTL D ON A.ID = D.AGC_ID
+        WHERE A.ID = #{id} AND A.STATUS = 'ACTIVE'
+    </select>
+
+    <select id="findWithPagingAndFilter" resultType="com.enjoy.common.dto.agc.AgcInfoDTO">
+        SELECT
+        A.ID, A.CODE, A.NAME, A.REG_DT,
+        D.BIZ_NUM, D.ZIP_CODE, D.BASE_ADDR, D.DTL_ADDR, D.EMAIL, D.TEL, D.CEO, A.STATUS
+        <include refid="agcSearchFromWhere"/>
+        ORDER BY A.ID DESC
+        LIMIT #{pageable.pageSize} OFFSET #{pageable.offset}
+    </select>
+
+    <update id="bulkUpdateStatus">
+        UPDATE AGC
+        SET
+        STATUS = #{status}
+        WHERE id IN
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="countWithFilter" resultType="long">
+        SELECT COUNT(A.ID) <include refid="agcSearchFromWhere"/>
+    </select>
+
+    <select id="findAllNoPaging" parameterType="com.enjoy.common.dto.agc.AgcSearchCondition" resultType="com.enjoy.common.dto.agc.AgcInfoDTO">
+        SELECT
+        A.ID,
+        A.CODE,
+        A.NAME,
+        A.STATUS,
+        A.REG_DT
+        FROM AGC A
+        <where>
+            <if test="name != null and name != ''">
+                AND A.NAME LIKE CONCAT('%', #{name}, '%')
+            </if>
+        </where>
+        ORDER BY A.NAME ASC
+    </select>
+
+</mapper>

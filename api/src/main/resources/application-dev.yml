@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: 6379
+
+file:
+  upload-dir: /home/app/uploads/dev
+
+logging:
+  level:
+    com.example.api.mapper: INFO
+    org.springframework.boot: INFO
+  file:
+    path: ${LOGGING_FILE_PATH:logs}
+    name: ${logging.file.path}/spring.log
+
+jwt:
+  secret: ${JWT_SECRET_KEY}
+
+server:
+  forward-headers-strategy: native

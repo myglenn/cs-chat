@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.enjoy.api.mapper.ChnAgcMapMapper">
+    <insert id="bulkInsert">
+        INSERT INTO CHN_AGC_MAP (CHN_ID, AGC_ID)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.chnId}, #{item.agcId})
+        </foreach>
+    </insert>
+
+    <select id="findParticipantsByChnId" resultType="com.enjoy.common.dto.agc.AgcInfoDTO">
+        SELECT
+            A.ID,
+            A.CODE,
+            A.NAME
+        FROM CHN_AGC_MAP M
+                 JOIN AGC A ON M.AGC_ID = A.ID
+        WHERE M.CHN_ID = #{chnId}
+    </select>
+    <select id="findParticipantsByChnIds" resultType="com.enjoy.common.dto.agc.AgcInfoDTO">
+        SELECT
+        M.CHN_ID,
+        A.ID,
+        A.CODE,
+        A.NAME
+        FROM CHN_AGC_MAP M
+        JOIN AGC A ON M.AGC_ID = A.ID
+        WHERE M.CHN_ID IN
+        <foreach item="chnId" collection="list" open="(" separator="," close=")">
+            #{chnId}
+        </foreach>
+    </select>
+    <select id="findAgcIdsByChnId" parameterType="long" resultType="long">
+        SELECT AGC_ID FROM CHN_AGC_MAP WHERE CHN_ID = #{chnId}
+    </select>
+</mapper>

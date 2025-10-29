@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.enjoy.api.mapper.MsgMapper">
+
+    <insert id="insert" parameterType="com.enjoy.common.domain.Msg">
+        <selectKey keyProperty="id" resultType="long" order="BEFORE">
+            SELECT GET_NEXT_SEQ_VAL('MSG') AS ID
+        </selectKey>
+        INSERT INTO MSG (ID, CONTENT, CHN_ID, SENDER_ID)
+        VALUES (#{id}, #{content}, #{chnId}, #{senderId})
+    </insert>
+
+    <select id="findByChnId" resultType="com.enjoy.common.domain.Msg">
+        SELECT
+            ID,
+            CONTENT,
+            CHN_ID,
+            SENDER_ID,
+            REG_DT
+        FROM MSG
+        WHERE CHN_ID = #{chnId}
+        ORDER BY ID ASC </select>
+
+    <select id="countByChnId" resultType="long">
+        SELECT COUNT(*)
+        FROM MSG
+        WHERE CHN_ID = #{chnId}
+    </select>
+
+    <select id="findChnIdByMsgId" parameterType="long" resultType="long">
+        SELECT CHN_ID
+        FROM MSG
+        WHERE ID = #{msgId}
+    </select>
+
+</mapper>

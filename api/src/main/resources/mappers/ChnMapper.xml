@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.enjoy.api.mapper.ChnMapper">
+
+    <insert id="insert" parameterType="com.enjoy.common.domain.Chn">
+        INSERT INTO CHN (ID, TYPE, TITLE, CATEGORY, STATUS, CREATOR_ID)
+        VALUES (#{id}, #{type}, #{title}, #{category}, #{status}, #{creatorId})
+    </insert>
+    <update id="update">
+        UPDATE CHN
+        <set>
+            <if test="title != null">TITLE = #{title},</if>
+            <if test="category != null">CATEGORY = #{category},</if>
+            <if test="status != null">STATUS = #{status},</if>
+        </set>
+        WHERE ID = #{id}
+    </update>
+
+    <select id="findById" resultType="com.enjoy.common.domain.Chn">
+        SELECT * FROM CHN WHERE ID = #{id}
+    </select>
+
+    <sql id="chnSearchWhereClause">
+        <where>
+            <if test="condition.agencyId != null">
+                AND C.ID IN (SELECT CHN_ID FROM CHN_AGC_MAP WHERE AGC_ID = #{condition.agencyId})
+            </if>
+            <if test="condition.title != null and condition.title != ''">
+                AND C.TITLE LIKE CONCAT('%', #{condition.title}, '%')
+            </if>
+            <if test="condition.status != null and condition.status != ''">
+                AND C.STATUS = #{condition.status}
+            </if>
+        </where>
+    </sql>
+
+    <select id="findWithPagingAndFilter" parameterType="com.enjoy.common.dto.chn.ChnSearchCondition"
+            resultType="com.enjoy.common.domain.Chn">
+        SELECT C.ID,
+               C.TYPE,
+               C.TITLE,
+               C.CATEGORY,
+               C.STATUS,
+               C.CREATOR_ID,
+               C.REG_DT,
+               LM.CONTENT AS lastMessage,
+               LM.REG_DT  AS lastMessageTime,
+               LM.ID      AS lastMsgId
+        FROM CHN C
+                 LEFT JOIN (SELECT CHN_ID,
+                                   CONTENT,
+                                   REG_DT,
+                                   ID,
+                                   ROW_NUMBER() OVER (PARTITION BY CHN_ID ORDER BY ID DESC) as rn
+                            FROM MSG) LM ON C.ID = LM.CHN_ID AND LM.rn = 1
+
+        <where>
+            <if test="status != null and status != 'all'">
+                <choose>
+                    <when test="status == 'IN_PROGRESS'">
+                        AND C.STATUS IN ('IN_PROGRESS', 'OPEN')
+                    </when>
+                    <otherwise>
+                        AND C.STATUS = #{status}
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="category != null and category.size() > 0">
+                AND C.CATEGORY IN
+                <foreach item="cat" collection="category" open="(" separator="," close=")">
+                    #{cat}
+                </foreach>
+            </if>
+
+            <if test="keyword != null and keyword != ''">
+                AND C.ID IN (
+                SELECT cam.CHN_ID
+                FROM CHN_AGC_MAP cam
+                JOIN AGC a ON cam.AGC_ID = a.ID
+                WHERE a.NAME LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+
+            <if test="agencyId != null">
+                AND C.ID IN (SELECT CHN_ID FROM CHN_AGC_MAP WHERE AGC_ID = #{agencyId})
+            </if>
+        </where>
+        ORDER BY LM.REG_DT DESC, C.ID DESC
+    </select>
+    <select id="countWithFilter" resultType="long">
+        SELECT COUNT(*)
+        FROM CHN C
+        <include refid="chnSearchWhereClause"/>
+    </select>
+
+</mapper>

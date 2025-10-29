@@ -1,0 +1,102 @@
+### =================================================
+### API 테스트를 위한 변수 설정
+### =================================================
+#-- 서버 주소 (로컬 환경) --#
+@baseUrl = http://localhost:8080
+
+#-- 토큰 변수 (로그인 후 자동으로 채워짐) --#
+@superAdminAccessToken =
+@agencyAdminAccessToken =
+
+
+### =================================================
+### 1. 인증 API (Authentication) - (필수 선행)
+### =================================================
+
+### [SUPER_ADMIN] 로그인
+# @name loginSuperAdmin
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "loginId": "admin",
+  "password": "your_super_admin_password"
+}
+> {% client.global.set("superAdminAccessToken", response.body.accessToken); %}
+
+### [AGENCY_ADMIN] 로그인
+# @name loginAgencyAdmin
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "loginId": "agency",
+  "password": "your_agency_admin_password"
+}
+> {% client.global.set("agencyAdminAccessToken", response.body.accessToken); %}
+
+
+### =================================================
+### 2. 대리점 관리 (SUPER_ADMIN) - AgcAdmController
+### =================================================
+# (반드시 [SUPER_ADMIN] 로그인 먼저 실행!)
+
+### [ADMIN] 신규 대리점 생성
+POST {{baseUrl}}/api/admin/agencies
+Content-Type: application/json
+Authorization: Bearer {{superAdminAccessToken}}
+
+{
+  "code": "A001",
+  "name": "강남중앙대리점",
+  "bizNum": "111-22-33333",
+  "address": "서울시 강남구",
+  "tel": "02-1111-2222",
+  "ceo": "김관리"
+}
+
+### [ADMIN] 모든 대리점 목록 조회
+GET {{baseUrl}}/api/admin/agencies?page=0&size=10
+Authorization: Bearer {{superAdminAccessToken}}
+
+### [ADMIN] 특정 대리점 상세 조회 (ID: 1)
+GET {{baseUrl}}/api/admin/agencies/1
+Authorization: Bearer {{superAdminAccessToken}}
+
+### [ADMIN] 대리점 정보 수정 (ID: 1)
+PUT {{baseUrl}}/api/admin/agencies/1
+Content-Type: application/json
+Authorization: Bearer {{superAdminAccessToken}}
+
+{
+  "name": "강남우수대리점",
+  "address": "서울시 강남구 테헤란로",
+  "tel": "02-5555-6666",
+  "ceo": "박대표"
+}
+
+### [ADMIN] 대리점 삭제 (ID: 1)
+DELETE {{baseUrl}}/api/admin/agencies/1
+Authorization: Bearer {{superAdminAccessToken}}
+
+
+### =================================================
+### 3. 내 대리점 관리 (AGENCY_ADMIN) - AgcAgencyController
+### =================================================
+# (반드시 [AGENCY_ADMIN] 로그인 먼저 실행!)
+
+### [AGENCY] 내 대리점 정보 조회
+GET {{baseUrl}}/api/agency/my-agency
+Authorization: Bearer {{agencyAdminAccessToken}}
+
+### [AGENCY] 내 대리점 정보 수정
+PUT {{baseUrl}}/api/agency/my-agency
+Content-Type: application/json
+Authorization: Bearer {{agencyAdminAccessToken}}
+
+{
+  "name": "우리대리점 새이름",
+  "address": "경기도 용인시",
+  "tel": "031-123-4567",
+  "ceo": "이사장"
+}

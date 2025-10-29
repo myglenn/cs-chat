@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.enjoy.api.mapper.MsgFileMapMapper">
+
+    <insert id="insert" parameterType="com.enjoy.common.domain.MsgFileMap">
+        INSERT INTO MSG_FILE_MAP (MSG_ID, FILE_ID)
+        VALUES (#{msgId}, #{fileId})
+    </insert>
+
+    <insert id="bulkInsert" parameterType="list">
+        INSERT INTO MSG_FILE_MAP (MSG_ID, FILE_ID)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.msgId}, #{item.fileId})
+        </foreach>
+    </insert>
+
+    <select id="findMsgIdByFileId" parameterType="long" resultType="long">
+        SELECT MSG_ID
+        FROM MSG_FILE_MAP
+        WHERE FILE_ID = #{fileId}
+        LIMIT 1
+    </select>
+
+
+    <select id="findFileIdsByMsgId" parameterType="long" resultType="long">
+        SELECT FILE_ID
+        FROM MSG_FILE_MAP
+        WHERE MSG_ID = #{msgId}
+    </select>
+
+</mapper>

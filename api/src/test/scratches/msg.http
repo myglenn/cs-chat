@@ -1,0 +1,33 @@
+### =================================================
+### 9. 웹소켓(WebSocket) API 테스트
+### =================================================
+# (반드시 로그인 먼저 실행!)
+
+### [WebSocket] 채널 1번 실시간 대화 테스트
+# WEBSOCKET 키워드로 연결을 시작합니다.
+WEBSOCKET {{baseUrl}}/ws-stomp
+
+### STOMP 프로토콜로 연결
+# 웹소켓 연결이 수립된 후, STOMP 프로토콜로 서버에 접속합니다.
+# Authorization 헤더에 토큰을 실어 인증을 처리합니다.
+CONNECT
+Authorization: Bearer {{superAdminAccessToken}}
+accept-version:1.1,1.2
+heart-beat:10000,10000
+
+### 채널 1번 토픽 구독
+# 서버가 "/topic/channels/1"로 보내는 메시지를 받기 시작합니다.
+SUBSCRIBE
+id:sub-1
+destination:/topic/channels/1
+
+### 채널 1번에 메시지 전송
+# 클라이언트가 "/app/channels/1/send"로 메시지를 보냅니다.
+# 이 요청은 @MessageMapping이 붙은 컨트롤러 메소드로 전달됩니다.
+SEND
+destination:/app/channels/1/send
+content-type:application/json
+
+{
+  "content": "안녕하세요, IntelliJ HTTP Client에서 보낸 메시지입니다."
+}

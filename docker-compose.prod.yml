@@ -1,0 +1,86 @@
+services:
+  cs-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - WAR_MODULE=web
+    container_name: cs-app-prod
+    restart: always
+    networks:
+      - default
+    volumes:
+      - ./logs:/app/logs
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:mariadb://cs-db:3306/prod_db
+      - SPRING_DATASOURCE_USERNAME=prod_user
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - spring.data.redis.host=host.docker.internal
+      - spring.data.redis.port=6379
+      - spring.data.redis.password=${REDIS_PASSWORD}
+      - LOGGING_FILE_PATH=/app/logs
+    depends_on:
+      cs-db:
+        condition: service_healthy
+      cs-redis:
+        condition: service_started
+
+  nginx-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    container_name: nginx-proxy-prod
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+    networks:
+      - default
+    environment:
+      - APP_HOST=cs-app
+      - APP_PORT=8080
+      - SERVER_NAME=myglenn.pe.kr
+      - SSL_CERT_PATH=/etc/letsencrypt/live/myglenn.pe.kr/fullchain.pem
+      - SSL_KEY_PATH=/etc/letsencrypt/live/myglenn.pe.kr/privkey.pem
+    depends_on:
+      - cs-app
+
+  cs-db:
+    image: mariadb:10.6
+    container_name: cs-db-prod
+    restart: always
+    networks:
+      - default
+    environment:
+      - MARIADB_DATABASE=prod_db
+      - MARIADB_USER=prod_user
+      - MARIADB_PASSWORD=${DB_PASSWORD}
+      - MARIADB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  cs-redis:
+    image: redis:7-alpine
+    container_name: cs-redis-prod
+    restart: always
+    networks:
+      - default
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
+volumes:
+  mariadb_data:
+  redis_data:
+
+networks:
+  default:
+    driver: bridge

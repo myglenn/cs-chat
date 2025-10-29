@@ -1,0 +1,20 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.enjoy.api.mapper.RefreshTokenMapper">
+
+    <insert id="save" parameterType="com.enjoy.common.domain.RefreshToken">
+        INSERT INTO REFRESH_TOKEN (USR_ID, TOKEN)
+        VALUES (#{usrId}, #{token})
+        ON DUPLICATE KEY UPDATE
+        TOKEN = VALUES(TOKEN),
+        UPD_DT = CURRENT_TIMESTAMP()
+    </insert>
+
+    <select id="findByUsrId" parameterType="long" resultType="com.enjoy.common.domain.RefreshToken">
+        SELECT USR_ID as usrId, TOKEN FROM REFRESH_TOKEN WHERE USR_ID = #{usrId}
+    </select>
+
+    <delete id="deleteByUsrId" parameterType="long">
+        DELETE FROM REFRESH_TOKEN WHERE USR_ID = #{usrId}
+    </delete>
+
+</mapper>

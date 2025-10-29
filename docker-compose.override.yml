@@ -1,0 +1,44 @@
+services:
+  cs-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - WAR_MODULE=web
+    container_name: cs-app-dev
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./logs:/app/logs
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_DATASOURCE_URL=jdbc:mariadb://host.docker.internal:3306/CS_CHAT
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - spring.data.redis.host=host.docker.internal
+      - spring.data.redis.port=6379
+      - spring.data.redis.password=${REDIS_PASSWORD}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - LOGGING_FILE_PATH=/app/logs
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  nginx-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    container_name: nginx-proxy-dev
+    restart: unless-stopped
+    volumes:
+      - /etc/ssl:/etc/ssl:ro
+    ports:
+      - "80:80"
+    environment:
+      - APP_HOST=cs-app
+      - APP_PORT=8080
+      - SERVER_NAME=myglenn.pe.kr
+      - SSL_CERT_PATH=/etc/ssl/fullchain.pem
+      - SSL_KEY_PATH=/etc/ssl/tarot.key
+    depends_on:
+      - cs-app
