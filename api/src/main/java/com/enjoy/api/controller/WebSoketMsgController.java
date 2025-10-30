@@ -20,31 +20,16 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WebSoketMsgController {
     private final MsgService msgService;
-    private final ChnService chnService;
     private final SimpMessageSendingOperations messagingTemplate;
 
     @MessageMapping("/channels/{chnId}/send")
-
     public void sendMessage(
             @DestinationVariable Long chnId,
             Principal principal,
             @Payload MsgSendDTO requestDTO) {
 
         String loginId = principal.getName();
-
-
-        MsgInfoDTO savedMsg = msgService.saveAndSendMessage(chnId, loginId, requestDTO);
-
-        System.out.println("savedMsg = " + savedMsg);
-
-
-        List<String> participantLoginIds = chnService.findParticipantLoginIdsByChnId(chnId);
-
-        System.out.println("participantLoginIds = " + participantLoginIds);
-
-
-        participantLoginIds.forEach(id -> {
-            messagingTemplate.convertAndSend("/topic/user/" + id, savedMsg);
-        });
+        MsgInfoDTO info = msgService.saveAndSendMessage(chnId, loginId, requestDTO);
+        System.out.println(" info = " + info);
     }
 }
