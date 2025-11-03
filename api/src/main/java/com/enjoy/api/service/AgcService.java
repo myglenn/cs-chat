@@ -30,6 +30,7 @@ public class AgcService {
     private final AgcDtlMapper agcDtlMapper;
     private final UsrService usrService;
     private final CmnSeqService cmnSeqService;
+    private final EmailService emailService;
 
 
     @Transactional
@@ -60,6 +61,26 @@ public class AgcService {
             usrToAdd.setAgcId(agc.getId());
             usrToAdd.setRole("AGENCY_ADMIN");
             usrService.createUserBySuperAdmin(usrToAdd);
+        }
+
+        if (requestDTO.getEmail() != null && !requestDTO.getEmail().isEmpty()) {
+
+            String toEmail = requestDTO.getEmail();
+            assert usrToAdd != null;
+            String loginId = usrToAdd.getLoginId();
+            String password = usrToAdd.getPassword();
+
+            String subject = "[demo] 대리점 관리자 계정이 생성되었습니다.";
+            String text = String.format(
+                    "안녕하세요, %s 대리점 관리자님.\n\n" +
+                            "demo 관리 시스템 계정이 생성되었습니다.\n\n" +
+                            "- 아이디: %s\n" +
+                            "- 임시 비밀번호: %s\n\n" +
+                            "로그인 후 반드시 비밀번호를 변경해 주시기 바랍니다.\n" +
+                            "감사합니다.",
+                    requestDTO.getName(), loginId, password
+            );
+            emailService.sendSimpleMessage(toEmail, subject, text);
         }
 
         return this.findAgencyById(agc.getId());
