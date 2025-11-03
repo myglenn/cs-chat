@@ -672,6 +672,9 @@
     .chat-list-search .search-btn {
         display: flex;
     }
+    .mobile-only {
+        display: none !important;
+    }
 }
 
 /* 카테고리 필터 */

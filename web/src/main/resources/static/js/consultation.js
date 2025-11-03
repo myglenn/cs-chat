@@ -12,7 +12,7 @@ const ConsultationState = {
     totalElements: 0,
     currentConsultation: null,
     searchTerm: '',
-    statusFilter: 'all',
+    statusFilter: 'IN_PROGRESS',
     categoryFilter: [],
     tempCategoryFilter: [],
     attachedFiles: []
@@ -426,6 +426,11 @@ function applyCategoryFilter() {
     ConsultationState.categoryFilter = [...ConsultationState.tempCategoryFilter];
     updateCategoryFilterLabel();
     document.getElementById('categoryFilterDropdown').classList.remove('active');
+    ConsultationState.searchTerm = '';
+    const searchInput = document.getElementById('listSearchInput');
+    if (searchInput) {
+        searchInput.value = '';
+    }
     refreshConsultationList();
 }
 
@@ -541,27 +546,38 @@ function renderConsultationList() {
                 item.classList.add('active');
             }
             item.onclick = () => selectConsultation(consultation.id, true);
+
             const statusName = getCodeName('CHN_STATUS', consultation.status);
             const statusClass = consultation.status === 'OPEN' ? 'badge-warning' :
                 consultation.status === 'IN_PROGRESS' ? 'badge-info' : 'badge-default';
             const categoryName = getCodeName('CHN_CATEGORY', consultation.category);
+            const timeText = formatTimestampSmart(consultation.lastMessageTime || consultation.regDt);
+
+            const participants = consultation.participants || [];
+            let avatarText = '?';
+            let previewText = '';
+
+            if (consultation.type === 'DM') {
+                avatarText = 'DM';
+                previewText = consultation.lastMessage;
+            } else {
+                if (participants.length > 0) {
+                    let agencyName = participants[0].name;
+                    if (participants.length > 1) {
+                        agencyName += ` 외 ${participants.length - 1}개`;
+                    }
+                    avatarText = agencyName.charAt(0);
+                    previewText = agencyName;
+                } else {
+                    avatarText = '?';
+                    previewText = '배정 대리점 없음';
+                }
+            }
 
             const avatar = createElementSafe('div', {
                 className: 'chat-item-avatar',
-                text: consultation.type === 'DM' ? 'DM' : (consultation.customerInitial || '?')
+                text: avatarText
             });
-
-
-            let titleText = consultation.title;
-            let agencyText = consultation.agency;
-            let customerText = consultation.customer;
-
-            if (consultation.type === 'DM') {
-                agencyText = null;
-                customerText = null;
-            }
-
-            const timeText = formatTimestampSmart(consultation.lastMessageTime || consultation.regDt);
 
             const content = createElementSafe('div', {
                 className: 'chat-item-content',
@@ -569,11 +585,8 @@ function renderConsultationList() {
                     createElementSafe('div', {
                         className: 'chat-item-header',
                         children: [
-                            createElementSafe('h3', {className: 'chat-item-title', text: titleText}),
-                            createElementSafe('span', {
-                                className: 'chat-item-time',
-                                text: formatTimestampSmart(consultation.lastMessageTime || consultation.regDt)
-                            })
+                            createElementSafe('h3', {className: 'chat-item-title', text: consultation.title}),
+                            createElementSafe('span', { className: 'chat-item-time', text: timeText })
                         ]
                     }),
                     createElementSafe('div', {
@@ -586,20 +599,11 @@ function renderConsultationList() {
                             }) : null
                         ]
                     }),
-                    agencyText ? createElementSafe('p', {
-                        attributes: {style: 'font-size: 0.75rem; color: var(--muted-foreground); margin-bottom: 0.25rem;'},
-                        text: agencyText
-                    }) : null,
 
-
-                    createElementSafe('p', {className: 'chat-item-preview', text: consultation.lastMessage}),
-
-                    customerText ? createElementSafe('p', {
-                        attributes: {style: 'font-size: 0.75rem; color: var(--muted-foreground); margin-top: 0.25rem;'},
-                        text: customerText
-                    }) : null
+                    createElementSafe('p', {className: 'chat-item-preview', text: previewText}),
                 ]
             });
+
             let unreadBadge = null;
             if (consultation.unreadCount > 0) {
                 unreadBadge = createElementSafe('span', {
@@ -654,17 +658,16 @@ async function selectConsultation(id, isUserAction = false) {
                         readApiEndpoint = `/agency/channels/${id}/read`;
                     }
                     await apiClient.post(readApiEndpoint);
-                    if (previewItem) {
-                        previewItem.unreadCount = 0;
-                    }
-                    if (ConsultationState.currentConsultation) {
-                        ConsultationState.currentConsultation.unreadCount = 0;
-                    }
-                    renderConsultationList();
-
                 } catch (readError) {
                     console.error("읽음 처리 API 호출 실패:", readError);
                 }
+                if (previewItem) {
+                    previewItem.unreadCount = 0;
+                }
+                if (ConsultationState.currentConsultation) {
+                    ConsultationState.currentConsultation.unreadCount = 0;
+                }
+                renderConsultationList();
             }
         }
         renderConsultationList();
@@ -946,9 +949,12 @@ function renderChatHeader(consultation) {
     titleEl.textContent = headerTitle;
 
     const creatorName = (consultation.creator && consultation.creator.name) ? consultation.creator.name : "고객";
-    const categoryName = getCodeName('CHN_CATEGORY', consultation.category);
-    subtitleEl.textContent = `${creatorName} · ${categoryName}`;
-    previewEl.textContent = '';
+    let subtitleText = creatorName;
+    if (consultation.type === 'CON') {
+        const categoryName = getCodeName('CHN_CATEGORY', consultation.category);
+        subtitleText += ` · ${categoryName}`;
+    }
+    previewEl.textContent = subtitleText;
 }
 
 function renderMessages(messages, unreadCountToScroll = 0) {

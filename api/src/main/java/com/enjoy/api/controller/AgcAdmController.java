@@ -20,7 +20,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/agencies")
-@PreAuthorize("hasRole('SUPER_ADMIN')")
+@PreAuthorize("hasAnyRole('SUPER_ADMIN', 'OPERATOR')")
 @RequiredArgsConstructor
 public class AgcAdmController {
     private final AgcService agcService;
