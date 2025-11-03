@@ -68,9 +68,6 @@ public class MsgService {
                         .files(convertFiles(msg))
                         .build())
                 .collect(Collectors.toList());
-
-        System.out.println("dtoList.get(3).getFiles() = " + dtoList.get(3).getFiles());
-        
         return dtoList;
     }
 
