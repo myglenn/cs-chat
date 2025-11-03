@@ -11,8 +11,4 @@ import java.util.List;
 @Mapper
 public interface ChnLogMapper {
     void insert(ChnLog chnLog);
-
-    List<ChnLogInfoDTO> findByChnId(@Param("chnId") Long chnId, @Param("pageable") Pageable pageable);
-
-    long countByChnId(Long chnId);
 }

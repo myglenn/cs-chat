@@ -261,6 +261,8 @@ async function openDmModal() {
         if (window.innerWidth <= 768) {
             document.getElementById('chatLayout').classList.add('chat-active');
         }
+        const newState = { consultationId: 'new' };
+        history.pushState(newState, '', '#chat=new');
     });
 
     modalFooter.append(cancelBtn, submitBtn);
@@ -338,13 +340,13 @@ async function openDmModal() {
         console.log("Fetched agencies data:", agencies);
         allAgencies = agencies;
         renderAgencyCheckboxes(allAgencies);
-        // const selectElement = document.getElementById('dmAgencySelect');
-        // allAgencies.forEach(agency => {
-        //     selectElement.appendChild(createElementSafe('option', {
-        //         text: agency.name,
-        //         attributes: {value: agency.id}
-        //     }));
-        // });
+
+
+
+
+
+
+
     } catch (error) {
         Toast.error('대리점 목록을 불러오는 데 실패했습니다.');
     }
@@ -395,7 +397,7 @@ function openCategoryFilter() {
         optionLabel.append(
             checkbox,
             createElementSafe('span', {className: 'category-checkbox'}),
-            createElementSafe('span', {className: 'category-label', text: category.name}) // text에 NAME 사용
+            createElementSafe('span', {className: 'category-label', text: category.name})
         );
         optionsContainer.appendChild(optionLabel);
     });
@@ -532,7 +534,6 @@ function renderConsultationList() {
 
 
     filteredList.forEach(consultation => {
-        console.log(`Rendering item ID: ${consultation.id}, unreadCount: ${consultation.unreadCount}`)
         try {
             const item = document.createElement('div');
             item.className = 'chat-item';
@@ -540,13 +541,7 @@ function renderConsultationList() {
                 item.classList.add('active');
             }
             item.onclick = () => selectConsultation(consultation.id, true);
-            console.log("Status:", consultation.status);
-
             const statusName = getCodeName('CHN_STATUS', consultation.status);
-            console.log("Title:", consultation.title);
-            console.log("Type:", consultation.type);
-            console.log("Participants:", consultation.participants);
-
             const statusClass = consultation.status === 'OPEN' ? 'badge-warning' :
                 consultation.status === 'IN_PROGRESS' ? 'badge-info' : 'badge-default';
             const categoryName = getCodeName('CHN_CATEGORY', consultation.category);
@@ -562,13 +557,9 @@ function renderConsultationList() {
             let customerText = consultation.customer;
 
             if (consultation.type === 'DM') {
-
                 agencyText = null;
                 customerText = null;
             }
-
-            console.log("Last Message Time:", consultation.lastMessageTime);
-            console.log("RegDt:", consultation.regDt);
 
             const timeText = formatTimestampSmart(consultation.lastMessageTime || consultation.regDt);
 
@@ -609,19 +600,13 @@ function renderConsultationList() {
                     }) : null
                 ]
             });
-
-            console.log("Last Message:", consultation.lastMessage);
-
-            console.log("Unread Count:", consultation.unreadCount);
             let unreadBadge = null;
-            console.log('consultation.unreadCount : ' + consultation.unreadCount)
             if (consultation.unreadCount > 0) {
                 unreadBadge = createElementSafe('span', {
                     className: 'badge badge-danger',
                     attributes: {style: 'position: absolute; bottom: 0.75rem; right: 1rem; min-width: 1.25rem; height: 1.25rem; padding: 0 0.25rem; border-radius: 9999px; font-size: 0.625rem; display: flex; align-items: center; justify-content: center;'},
                     text: consultation.unreadCount
                 });
-                console.log(unreadBadge);
             }
 
             item.appendChild(avatar);
@@ -638,7 +623,6 @@ function renderConsultationList() {
 }
 
 async function selectConsultation(id, isUserAction = false) {
-    console.log(`selectConsultation called for ID: ${id}, isUserAction: ${isUserAction}`);
     try {
 
         let unreadCountToScroll = 0;
@@ -648,7 +632,6 @@ async function selectConsultation(id, isUserAction = false) {
             unreadCountToScroll = previewItem.unreadCount || 0;
         }
 
-        // 2. [올바른 위치] API 엔드포인트를 먼저 정의합니다.
         const currentUserRole = AppState.currentUser.role;
         let apiEndpoint = '';
         if (currentUserRole === 'SUPER_ADMIN' || currentUserRole === 'OPERATOR') {
@@ -657,7 +640,6 @@ async function selectConsultation(id, isUserAction = false) {
             apiEndpoint = `/agency/channels/${id}`;
         }
 
-        // 3. [올바른 위치] 정의된 엔드포인트로 상세 데이터를 가져옵니다.
         const fetchedConsultation = await apiClient.get(apiEndpoint);
         ConsultationState.currentConsultation = fetchedConsultation;
         const currentCon = ConsultationState.currentConsultation;
@@ -685,7 +667,6 @@ async function selectConsultation(id, isUserAction = false) {
                 }
             }
         }
-        console.log(`Rendering chat header and messages for ID: ${id}`);
         renderConsultationList();
         renderChatHeader(currentCon);
         renderMessages(currentCon.messages || [], unreadCountToScroll);
@@ -695,6 +676,8 @@ async function selectConsultation(id, isUserAction = false) {
 
         const completeBtn = document.getElementById('completeBtn');
         const inputContainer = document.getElementById('chatInputContainer');
+        const userRole = AppState.currentUser.role;
+        const isAdmin = (userRole === 'SUPER_ADMIN' || userRole === 'OPERATOR');
 
         if (currentCon && currentCon.status !== 'CLOSED') {
             completeBtn.style.display = 'flex';
@@ -710,7 +693,6 @@ async function selectConsultation(id, isUserAction = false) {
 
 
         if (!history.state || history.state.consultationId !== id) {
-            console.log(`Pushing history state for ID: ${id}`);
             history.pushState({consultationId: id}, '', `#chat=${id}`);
         }
 
@@ -801,52 +783,52 @@ async function submitDm(agencyIdSet) {
 }
 
 
-async function submitComplete(event) {
-    event.preventDefault();
-
-    const category = document.getElementById('completeCategory').value;
-    const memo = document.getElementById('completeMemo').value.trim();
-
-    if (!category) {
-        document.getElementById('completeCategoryError').textContent = '카테고리를 선택하세요';
-        return;
-    }
-
-    if (!ConsultationState.currentConsultation) {
-        Toast.error("선택된 상담이 없습니다.");
-        return;
-    }
-
-    const consultationId = ConsultationState.currentConsultation.id;
-
-
-    const payload = {
-        category: category,
-        memo: memo
-
-    };
-
-    try {
-
-
-        await apiClient.put(`/admin/channels/${consultationId}/close`, payload);
-
-        Toast.success('상담이 완료되었습니다');
-        closeCompleteModal();
-
-
-        const consultation = ConsultationState.consultations.find(c => c.id === consultationId);
-        if (consultation) {
-            consultation.status = 'CLOSED';
-        }
-        ConsultationState.currentConsultation.status = 'CLOSED';
-        selectConsultation(consultationId);
-        renderConsultationList();
-
-    } catch (error) {
-        Toast.error("상담 완료 처리에 실패했습니다.");
-    }
-}
+// async function submitComplete(event) {
+//     event.preventDefault();
+//
+//     const category = document.getElementById('completeCategory').value;
+//     const memo = document.getElementById('completeMemo').value.trim();
+//
+//     if (!category) {
+//         document.getElementById('completeCategoryError').textContent = '카테고리를 선택하세요';
+//         return;
+//     }
+//
+//     if (!ConsultationState.currentConsultation) {
+//         Toast.error("선택된 상담이 없습니다.");
+//         return;
+//     }
+//
+//     const consultationId = ConsultationState.currentConsultation.id;
+//
+//
+//     const payload = {
+//         category: category,
+//         memo: memo
+//
+//     };
+//
+//     try {
+//
+//
+//         await apiClient.put(`/admin/channels/${consultationId}/close`, payload);
+//
+//         Toast.success('상담이 완료되었습니다');
+//         closeCompleteModal();
+//
+//
+//         const consultation = ConsultationState.consultations.find(c => c.id === consultationId);
+//         if (consultation) {
+//             consultation.status = 'CLOSED';
+//         }
+//         ConsultationState.currentConsultation.status = 'CLOSED';
+//         selectConsultation(consultationId);
+//         renderConsultationList();
+//
+//     } catch (error) {
+//         Toast.error("상담 완료 처리에 실패했습니다.");
+//     }
+// }
 
 async function sendChatMessage() {
     const input = document.getElementById('messageInput');
@@ -881,7 +863,7 @@ async function sendChatMessage() {
                 content: text,
                 regDt: new Date().toISOString(),
                 sender: {id: AppState.currentUser.id, name: AppState.currentUser.name},
-                files: ConsultationState.attachedFiles.map(f => ({ // files 정보 추가
+                files: ConsultationState.attachedFiles.map(f => ({
                     id: f.id,
                     name: f.name,
                     type: f.type,
@@ -893,7 +875,8 @@ async function sendChatMessage() {
         } else {
             const channelId = ConsultationState.currentConsultation.id;
             const payload = {
-                content: text
+                content: text,
+                fileIds: fileIds
             };
             apiClient.publish(`/app/channels/${channelId}/send`, payload);
         }
@@ -949,7 +932,7 @@ function renderChatHeader(consultation) {
     let headerTitle = consultation.title;
 
     if (consultation.type === 'CON') {
-        const participants = consultation.participants; //
+        const participants = consultation.participants;
         if (participants && participants.length > 0) {
             headerTitle = participants[0].name;
             if (participants.length > 1) {
@@ -963,7 +946,7 @@ function renderChatHeader(consultation) {
     titleEl.textContent = headerTitle;
 
     const creatorName = (consultation.creator && consultation.creator.name) ? consultation.creator.name : "고객";
-    const categoryName = getCodeName('CHN_CATEGORY', consultation.category); //
+    const categoryName = getCodeName('CHN_CATEGORY', consultation.category);
     subtitleEl.textContent = `${creatorName} · ${categoryName}`;
     previewEl.textContent = '';
 }
@@ -989,7 +972,7 @@ function renderMessages(messages, unreadCountToScroll = 0) {
 
 
     const currentConsultation = ConsultationState.currentConsultation;
-    // let startIndex = 0;
+
 
     const firstUnreadIndex = (unreadCountToScroll > 0 && messages.length > 0)
         ? Math.max(0, messages.length - unreadCountToScroll)
@@ -1010,7 +993,7 @@ function renderMessages(messages, unreadCountToScroll = 0) {
         toggleBtn.onclick = toggleNoticeCard;
 
         const noticeCard = createElementSafe('div', {
-            className: 'consultation-notice-card',
+            className: 'consultation-notice-card collapsed',
             id: 'consultationNoticeCard',
             children: [
                 createElementSafe('div', {
@@ -1059,7 +1042,7 @@ function renderMessages(messages, unreadCountToScroll = 0) {
         });
 
         messagesContainer.appendChild(noticeCard);
-        // startIndex = 1;
+
     }
 
     for (let i = 0; i < messages.length; i++) {
@@ -1068,14 +1051,7 @@ function renderMessages(messages, unreadCountToScroll = 0) {
 
         let fileElements = [];
 
-        const filesContainer = fileElements.length > 0 ? createElementSafe('div', {
-            className: 'message-files',
-            children: fileElements
-        }) : null;
-        const textBubble = message.content ? createElementSafe('div', {
-            className: 'message-bubble',
-            text: message.content
-        }) : null;
+
 
         if (message.files && message.files.length > 0) {
             message.files.forEach(file => {
@@ -1084,9 +1060,9 @@ function renderMessages(messages, unreadCountToScroll = 0) {
                 if (isImage) {
                     const img = createElementSafe('img', {
                         attributes: {
-                            src: file.downloadUrl, // DTO의 downloadUrl 사용
+                            src: file.downloadUrl,
                             alt: file.name,
-                            style: 'max-width: 200px; max-height: 150px; cursor: pointer; border-radius: var(--radius-sm);' // 크기 제한 및 스타일
+                            style: 'max-width: 200px; max-height: 150px; cursor: pointer; border-radius: var(--radius-sm);'
                         }
                     });
                     img.onclick = () => openImageModal(file.downloadUrl, file.name);
@@ -1098,39 +1074,49 @@ function renderMessages(messages, unreadCountToScroll = 0) {
                 } else {
 
                     const fileIcon = createElementSafe('div', {
-                        className: 'file-icon', // (CSS 필요)
-                        children: [Icon({ type: 'file', size: 24 })] // 파일 아이콘
+                        className: 'file-icon',
+                        children: [Icon({ type: 'file', size: 24 })]
                     });
 
-                    // 다운로드 링크 생성 (<a> 태그 사용)
+
                     const downloadLink = createElementSafe('a', {
-                        className: 'file-download-link', // (CSS 필요)
+                        className: 'file-download-link',
                         attributes: {
-                            href: file.downloadUrl,   // DTO의 downloadUrl 사용
-                            download: file.name,      // 클릭 시 이 이름으로 다운로드
+                            href: file.downloadUrl,
+                            download: file.name,
                             title: '다운로드'
                         },
                         children: [Icon({ type: 'download', size: 20 })]
                     });
-                    // [삭제] downloadBtn.onclick = () => downloadFile(...) 제거
+
 
                     fileElements.push(createElementSafe('div', {
-                        className: 'message-file-item message-file-document', // (CSS 필요)
+                        className: 'message-file-item message-file-document',
                         children: [
                             fileIcon,
                             createElementSafe('div', {
-                                className: 'file-info', // (CSS 필요)
+                                className: 'file-info',
                                 children: [
-                                    createElementSafe('span', { className: 'file-name', text: file.name }), // 원본 파일명
-                                    createElementSafe('span', { className: 'file-size', text: formatFileSize(file.size) }) // 파일 크기
+                                    createElementSafe('span', { className: 'file-name', text: file.name }),
+                                    createElementSafe('span', { className: 'file-size', text: formatFileSize(file.size) })
                                 ]
                             }),
-                            downloadLink // 다운로드 링크(<A>) 사용
+                            downloadLink
                         ]
                     }));
                 }
             });
         }
+
+        const filesContainer = fileElements.length > 0 ? createElementSafe('div', {
+            className: 'message-files',
+            children: fileElements
+        }) : null;
+        const textBubble = message.content ? createElementSafe('div', {
+            className: 'message-bubble',
+            text: message.content
+        }) : null;
+
         let messageContentChildren = [];
         if (isSent) {
             messageContentChildren = [
@@ -1265,9 +1251,6 @@ function updateSearchUI() {
 
 
 function onGlobalUpdate(updateData) {
-
-    console.log("onGlobalUpdate received:", updateData);
-
     if (ChatSearchState.isSearching) {
         Toast.info("새 메시지가 도착하여 검색이 초기화되었습니다.");
         closeChatSearch();
@@ -1280,43 +1263,30 @@ function onGlobalUpdate(updateData) {
     if (updateData.content !== undefined && updateData.chnId !== undefined) {
 
         chnId = updateData.chnId;
-        console.log(`It's a message for channel ID: ${chnId}`);
     } else if (updateData.id !== undefined && updateData.title !== undefined) {
 
         chnId = updateData.id;
         isNewChannel = true;
         newChannelData = updateData;
-        console.log(`It's a channel update/creation for channel ID: ${chnId}`);
     } else {
-
-        console.error("Unknown update data received:", updateData);
         return;
     }
 
 
     let previewItem = ConsultationState.consultations.find(c => String(c.id) === String(chnId));
-    console.log("Found previewItem:", previewItem);
-
     if (isNewChannel && !previewItem) {
-
-        console.log("Adding new channel to list:", newChannelData);
         ConsultationState.consultations.unshift(newChannelData);
         previewItem = newChannelData;
     }
 
     if (!previewItem) {
-
-        console.log(`Channel ${chnId} not found in ConsultationState. Ignore update.`);
         return;
     }
 
 
     if (isNewChannel) {
-        console.log("Updating channel info in list:", newChannelData);
         Object.assign(previewItem, newChannelData);
     } else {
-
-        console.log("Updating last message info for channel:", chnId);
         previewItem.lastMessage = updateData.content;
         previewItem.lastMessageTime = updateData.regDt;
 
@@ -1324,22 +1294,17 @@ function onGlobalUpdate(updateData) {
 
 
         const isViewing = ConsultationState.currentConsultation && String(ConsultationState.currentConsultation.id) === String(chnId);
-        console.log(`Is viewing this channel (${chnId})? ${isViewing}`);
 
         if (!isMyMessage && !isViewing) {
             previewItem.unreadCount = (previewItem.unreadCount || 0) + 1;
-            console.log(`Incremented unread count for channel ${chnId} to ${previewItem.unreadCount}`);
         }
 
 
         if (isViewing) {
-            console.log("Currently viewing, pushing message to detail view and rendering...");
             ConsultationState.currentConsultation.messages.push(updateData);
             renderMessages(ConsultationState.currentConsultation.messages);
         }
     }
-
-    console.log("Sorting consultation list...");
     ConsultationState.consultations.sort((a, b) => {
         const getTimestamp = (item) => {
             const timeStr = item.lastMessageTime || item.regDt;
@@ -1352,9 +1317,6 @@ function onGlobalUpdate(updateData) {
         const timeB = getTimestamp(b);
         return timeB - timeA;
     })
-
-
-    console.log("Rendering updated consultation list...");
     renderConsultationList();
 }
 
@@ -1470,7 +1432,7 @@ function formatTimestampSmart(isoString) {
     try {
         const date = new Date(isoString);
         const now = new Date();
-        const diffHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60); // 시간 차이 계산
+        const diffHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
 
         const hours = String(date.getHours()).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
@@ -1532,11 +1494,11 @@ function performChatSearch() {
 
     ChatSearchState.searchResults = results;
     ChatSearchState.currentResultIndex = results.length > 0 ? 0 : -1;
-    updateSearchUI(); //
+    updateSearchUI();
 
-    // if (results.length > 0) {
-    //     navigateChatSearch(0);
-    // }
+
+
+
 }
 
 function navigateChatSearch(direction) {
@@ -1570,7 +1532,7 @@ function openChatSearch() {
     const chatHeader = document.querySelector('.chat-header');
     const searchInput = document.getElementById('messageSearchInput');
 
-    ChatSearchState.isSearching = true; //
+    ChatSearchState.isSearching = true;
     searchHeader.style.display = 'flex';
     chatHeader.style.display = 'none';
     searchInput.focus();
@@ -1579,26 +1541,26 @@ function openChatSearch() {
 
 function createAttachmentPreview(file, tempId) {
     const isImage = file.type.startsWith('image/');
-    const fileSizeFormatted = formatFileSize(file.size); // (formatFileSize 함수 필요 - 아래 참고)
+    const fileSizeFormatted = formatFileSize(file.size);
 
     const previewContent = isImage
         ? [createElementSafe('img', { attributes: { src: URL.createObjectURL(file), alt: file.name, style: 'width: 40px; height: 40px; object-fit: cover;' } })]
-        : [Icon({ type: 'file', size: 24 })]; // 이미지 아니면 파일 아이콘
+        : [Icon({ type: 'file', size: 24 })];
 
     const removeBtn = createElementSafe('button', {
-        className: 'remove-file-btn', // (CSS 스타일링 필요)
+        className: 'remove-file-btn',
         attributes: { type: 'button', title: '제거' },
         children: [Icon({ type: 'close', size: 16 })]
-        // onclick은 업로드 완료 후 실제 ID로 연결됨
+
     });
 
     const previewElement = createElementSafe('div', {
-        className: 'attachment-preview-item', // (CSS 스타일링 필요)
-        id: `preview-${tempId}`, // 임시 ID 사용
+        className: 'attachment-preview-item',
+        id: `preview-${tempId}`,
         children: [
             ...previewContent,
             createElementSafe('div', {
-                className: 'attachment-info', // (CSS 스타일링 필요)
+                className: 'attachment-info',
                 children: [
                     createElementSafe('span', { className: 'attachment-name', text: file.name }),
                     createElementSafe('span', { className: 'attachment-size', text: fileSizeFormatted })
@@ -1611,15 +1573,15 @@ function createAttachmentPreview(file, tempId) {
 }
 
 function removeAttachedFile(fileId, previewElement) {
-    // 1. ConsultationState.attachedFiles 배열에서 해당 파일 ID 제거
+
     ConsultationState.attachedFiles = ConsultationState.attachedFiles.filter(f => f.id !== fileId);
 
-    // 2. DOM에서 미리보기 요소 제거
+
     if (previewElement) {
         previewElement.remove();
     }
 
-    // 3. 첨부 파일이 없으면 컨테이너 숨기기
+
     const attachedFilesContainer = document.getElementById('attachedFilesContainer');
     if (attachedFilesContainer && ConsultationState.attachedFiles.length === 0) {
         attachedFilesContainer.style.display = 'none';
@@ -1635,6 +1597,144 @@ function formatFileSize(bytes) {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     const index = Math.min(i, sizes.length - 1);
     return parseFloat((bytes / Math.pow(k, index)).toFixed(1)) + ' ' + sizes[index];
+}
+
+async function submitComplete(selectedCategory) {
+    // event.preventDefault();
+
+    const category = selectedCategory;
+    // const memo = document.getElementById('completeMemo').value.trim();
+
+    if (!category) {
+        Toast.error("카테고리를 선택하세요.");
+        return;
+    }
+
+    if (!ConsultationState.currentConsultation) {
+        Toast.error("선택된 상담이 없습니다.");
+        return;
+    }
+
+    const consultationId = ConsultationState.currentConsultation.id;
+    const payload = {
+        category: category,
+        memo: ""
+    };
+
+    try {
+        await apiClient.put(`/admin/channels/${consultationId}/close`, payload);
+        Toast.success('상담이 완료되었습니다');
+        // closeCompleteModal(); // 이미 2단계에서 모달을 닫음
+        const consultation = ConsultationState.consultations.find(c => c.id === consultationId);
+        if (consultation) {
+            consultation.status = 'CLOSED';
+        }
+        ConsultationState.currentConsultation.status = 'CLOSED';
+        selectConsultation(consultationId, false);
+        renderConsultationList();
+
+    } catch (error) {
+        console.error("상담 완료 처리 실패:", error);
+        Toast.error("상담 완료 처리에 실패했습니다.");
+    }
+}
+
+function openCompleteModal() {
+    // 이전 모달이 있다면 제거
+    const existingModal = document.getElementById('completeModal');
+    if (existingModal) existingModal.remove();
+    const categories = AppState.commonCodes['CHN_CATEGORY'] || [];
+    let selectedCategory = categories.length > 0 ? categories[0].code : "";
+    const modalOverlay = createElementSafe('div', {
+        id: 'completeModal',
+        className: 'modal-overlay active registration-modal'
+    });
+    const modalContent = createElementSafe('div', {
+        className: 'modal-content',
+        attributes: { style: 'max-width: 25rem;' } // 모달 너비 조절
+    });
+    const closeBtn = createElementSafe('button', {
+        className: 'modal-close',
+        children: [Icon({ type: 'close', size: 20 })]
+    });
+    closeBtn.addEventListener('click', () => modalOverlay.remove());
+
+    const modalHeader = createElementSafe('div', {
+        className: 'modal-header',
+        children: [
+            createElementSafe('h2', { className: 'modal-title', text: '상담 카테고리 선택' }),
+            closeBtn
+        ]
+    });
+    const modalBody = createElementSafe('div', {
+        className: 'modal-body',
+        attributes: { style: 'display: flex; flex-direction: column; gap: 1rem;' }
+    });
+    categories.forEach((category, index) => {
+        const radioId = `category-radio-${category.code}`;
+
+        const radioInput = createElementSafe('input', {
+            id: radioId,
+            attributes: {
+                type: 'radio',
+                name: 'completeCategory',
+                value: category.code,
+                style: 'display: none;'
+            }
+        });
+        if (index === 0) radioInput.checked = true;
+        const customRadio = createElementSafe('span', {
+            className: 'custom-radio-ui',
+            attributes: { style: 'width: 20px; height: 20px; border: 2px solid var(--border); border-radius: 50%; display: inline-block; position: relative; margin-right: 0.75rem; flex-shrink: 0;' }
+        });
+        const customRadioInner = createElementSafe('span', {
+            attributes: { style: 'width: 12px; height: 12px; background-color: var(--primary); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none;' }
+        });
+        customRadio.appendChild(customRadioInner);
+        const label = createElementSafe('label', {
+            className: 'category-radio-label',
+            attributes: {
+                for: radioId,
+                style: 'display: flex; align-items: center; cursor: pointer; font-size: 1rem;'
+            },
+            children: [
+                radioInput,
+                customRadio,
+                createElementSafe('span', { text: category.name })
+            ]
+        });
+        radioInput.addEventListener('change', () => {
+            selectedCategory = radioInput.value;
+            modalBody.querySelectorAll('.custom-radio-ui span').forEach(inner => inner.style.display = 'none');
+            customRadioInner.style.display = 'block';
+        });
+        if (index === 0) customRadioInner.style.display = 'block';
+        modalBody.appendChild(label);
+    });
+
+    const modalFooter = createElementSafe('div', {
+        className: 'modal-footer',
+        attributes: { style: 'padding-top: 0;' }
+    });
+
+    const submitBtn = createElementSafe('button', {
+        type: 'button',
+        className: 'btn btn-primary w-full',
+        text: '완료'
+    });
+
+    submitBtn.addEventListener('click', () => {
+        submitComplete(selectedCategory);
+        modalOverlay.remove();
+    });
+
+    modalFooter.appendChild(submitBtn);
+
+    // --- 모달 조립 및 표시 ---
+    modalContent.append(modalHeader, modalBody, modalFooter);
+    modalOverlay.appendChild(modalContent);
+    document.body.appendChild(modalOverlay);
+    document.body.style.overflow = 'hidden';
 }
 
 
@@ -1656,7 +1756,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await refreshConsultationList();
 
     let initialConsultationId = null;
-    if (window.location.hash.startsWith('#chat=')) { //
+    if (window.location.hash.startsWith('#chat=')) {
         const id = window.location.hash.split('=')[1];
         if (id) {
             initialConsultationId = id;
@@ -1664,13 +1764,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             history.replaceState(state, '', `#chat=${id}`);
         }
     } else {
-        history.replaceState(null, '', window.location.pathname + window.location.search); //
+        history.replaceState(null, '', window.location.pathname + window.location.search);
     }
 
     renderConsultationList();
 
     if (initialConsultationId) {
-        selectConsultation(initialConsultationId, false); // isUserAction: false로 호출
+        selectConsultation(initialConsultationId, false);
     }
 
 
@@ -1703,25 +1803,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const backBtn = document.getElementById('backToListBtn');
-    // if (backBtn) {
-    //     backBtn.addEventListener('click', closeChat);
-    // }
+
+
+
 
     if (backBtn) {
-        // [수정] closeChat 함수 대신 인라인 함수로 변경
         backBtn.addEventListener('click', () => {
-            // 1. [추가] 임시 채널(id: null)이면 API 호출 없이 목록으로만 이동
-            if (ConsultationState.currentConsultation && ConsultationState.currentConsultation.id === null) {
-                // (히스토리 API를 사용한다면 history.back()이 더 적절할 수 있음)
-                const chatLayout = document.getElementById('chatLayout');
-                const chatView = document.getElementById('chatView');
-                if (chatLayout) chatLayout.classList.remove('chat-active');
-                if (chatView) chatView.classList.remove('active');
-                ConsultationState.currentConsultation = null;
-                return;
-            }
-
-            // 2. (기존) ID가 있는 채널은 closeChat(history.back())
             closeChat();
         });
     }
@@ -1756,7 +1843,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (listSearchBtn) {
         listSearchBtn.addEventListener('click', () => {
-            searchConsultations(); //
+            searchConsultations();
         });
     }
     if (listSearchInput) {
@@ -1774,24 +1861,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     const closeSearchBtn = document.getElementById('closeMessageSearchBtn');
     if (closeSearchBtn) {
-        closeSearchBtn.addEventListener('click', closeChatSearch); //
+        closeSearchBtn.addEventListener('click', closeChatSearch);
     }
     const chatSearchInput = document.getElementById('messageSearchInput');
     if (chatSearchInput) {
-        // chatSearchInput.addEventListener('keydown', (e) => {
-        //     if (e.key === 'Enter') {
-        //         e.preventDefault();
-        //         performChatSearch();
-        //         navigateChatSearch('next');
-        //     }
-        // });
+
+
+
+
+
+
+
         chatSearchInput.addEventListener('input', (e) => {
             performChatSearch();
         });
         chatSearchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                navigateChatSearch('next'); //
+                navigateChatSearch('next');
             }
         });
     }
@@ -1799,18 +1886,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const searchPrevBtn = document.getElementById('searchPrevBtn');
     if (searchPrevBtn) {
         searchPrevBtn.addEventListener('click', () => {
-            // if (chatSearchInput.value.trim() !== ChatSearchState.searchTerm) {
-            //     performChatSearch();
-            // }
+
+
+
             navigateChatSearch('prev');
         });
     }
     const searchNextBtn = document.getElementById('searchNextBtn');
     if (searchNextBtn) {
         searchNextBtn.addEventListener('click', () => {
-            // if (chatSearchInput.value.trim() !== ChatSearchState.searchTerm) {
-            //     performChatSearch();
-            // }
+
+
+
             navigateChatSearch('next');
         });
     }
@@ -1827,22 +1914,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (fileInput && attachedFilesContainer) {
         fileInput.addEventListener('change', async (event) => {
+            console.log(">>> File Input Changed. event.target.files:", event.target.files);
             const files = event.target.files;
             if (!files || files.length === 0) {
+                console.log(`[File Change] Found ${files ? files.length : 'null/undefined'} files.`);
                 return;
             }
 
-            // 파일 선택 창 비우기 (동일 파일 재선택 가능하도록)
-            fileInput.value = '';
 
-            attachedFilesContainer.style.display = 'flex'; // 미리보기 컨테이너 보이기
-
+            attachedFilesContainer.style.display = 'flex';
             for (const file of files) {
-                // (선택 사항) 파일 크기/종류 제한 로직 추가 가능
-                // if (file.size > MAX_FILE_SIZE) { ... }
-                // if (!ALLOWED_FILE_TYPES.includes(file.type)) { ... }
-
-                const fileId = `temp-${Date.now()}-${Math.random()}`; // 임시 ID
+                const fileId = `temp-${Date.now()}-${Math.random()}`;
                 const previewElement = createAttachmentPreview(file, fileId);
                 attachedFilesContainer.appendChild(previewElement);
                 try {
@@ -1860,7 +1942,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         name: file.name,
                         type: file.type,
                         size: file.size,
-                        // previewElement: previewElement // 필요시 DOM 요소 참조 저장
+
                     });
 
                     const removeBtn = previewElement.querySelector('.remove-file-btn');
@@ -1874,6 +1956,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     previewElement.remove();
                 }
             }
+            fileInput.value = '';
+        });
+    }
+
+    const completeBtn = document.getElementById('completeBtn');
+    if (completeBtn) {
+        completeBtn.addEventListener('click', () => {
+            openCompleteModal();
         });
     }
 

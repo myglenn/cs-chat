@@ -13,6 +13,7 @@ public enum ErrorCodes {
 
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "사용자를 찾을 수 없습니다. (대상: %s)"),
     DUPLICATE_LOGIN_ID(HttpStatus.BAD_REQUEST, "U002", "이미 사용 중인 아이디입니다."),
+    INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "U003", "비밀번호가 일치하지 않습니다."),
 
 
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "A001", "해당 리소스에 접근할 권한이 없습니다."),

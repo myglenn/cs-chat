@@ -540,6 +540,26 @@ function openAgencyModal() {
         modalFooter.append(cancelBtn, submitBtn);
     }
 
+    const bizNumInput = form.querySelector('#bizNum');
+    if (bizNumInput) {
+        bizNumInput.addEventListener('input', (e) => {
+            const value = e.target.value;
+            const formattedValue = formatBizNum(value);
+            e.target.value = formattedValue;
+            updateFormField('bizNum', formattedValue);
+        });
+    }
+
+    const telInput = form.querySelector('#tel');
+    if (telInput) {
+        telInput.addEventListener('input', (e) => {
+            const value = e.target.value;
+            const formattedValue = formatTel(value);
+            e.target.value = formattedValue;
+            updateFormField('tel', formattedValue);
+        });
+    }
+
     modalBody.appendChild(form);
     modalContent.append(modalHeader, modalBody, modalFooter);
     modalOverlay.appendChild(modalContent);
@@ -648,26 +668,37 @@ function updateFormField(field, value) {
     }
 }
 
-function checkLoginId() {
+async function checkLoginId() {
     const loginId = AgencyState.formData.loginId;
+    const errorEl = document.getElementById('loginIdError');
 
     if (!loginId) {
-        document.getElementById('loginIdError').textContent = '관리자 아이디를 입력하세요';
+        errorEl.textContent = '관리자 아이디를 입력하세요';
         return;
     }
 
-    const isDuplicate = Math.random() < 0.3;
-
-    AgencyState.isLoginIdChecked = true;
-
-    if (isDuplicate) {
+    try {
+        const response = await apiClient.post('/api/auth/check-id', {loginId: loginId});
+        AgencyState.isLoginIdChecked = true;
+        if (response.isDuplicate) {
+            AgencyState.isLoginIdValid = false;
+            errorEl.textContent = '이미 사용중인 아이디입니다';
+            Toast.error('이미 사용중인 아이디입니다');
+        } else {
+            AgencyState.isLoginIdValid = true;
+            errorEl.textContent = '사용 가능한 아이디입니다';
+            errorEl.style.color = 'var(--success)';
+            Toast.success('사용 가능한 아이디입니다');
+            // 2초 뒤에 피드백 메시지 초기화
+            setTimeout(() => {
+                errorEl.style.color = '';
+                errorEl.textContent = '';
+            }, 2000);
+        }
+    } catch (error) {
+        Toast.error('중복 확인 중 오류가 발생했습니다.');
+        AgencyState.isLoginIdChecked = false;
         AgencyState.isLoginIdValid = false;
-        document.getElementById('loginIdError').textContent = '이미 사용중인 아이디입니다';
-        Toast.error('이미 사용중인 아이디입니다');
-    } else {
-        AgencyState.isLoginIdValid = true;
-        document.getElementById('loginIdError').textContent = '';
-        Toast.success('사용 가능한 아이디입니다');
     }
 }
 
@@ -675,43 +706,52 @@ function validateAgencyForm() {
     const errors = {};
     const formData = AgencyState.formData;
 
+    const bizNumRegex = /^\d{10}$/;
+    const telRegex = /^\d{8,11}$/;
 
-    if (!formData.agencyName.trim()) {
+
+    if (!formData.agencyName || !formData.agencyName.trim()) {
         errors.agencyName = '대리점명을 입력하세요';
     }
 
-    if (!formData.bizNum.trim()) {
+    const bizNumRaw = formData.bizNum ? formData.bizNum.replace(/-/g, '') : '';
+    if (!bizNumRaw) {
         errors.bizNum = '사업자등록번호를 입력하세요';
+    } else if (!bizNumRegex.test(bizNumRaw)) {
+        errors.bizNum = '올바른 사업자등록번호 10자리를 입력하세요.';
     }
 
-    if (!formData.loginId.trim()) {
+    if (!formData.loginId || !formData.loginId.trim()) {
         errors.loginId = '관리자 아이디를 입력하세요';
     } else if (!AgencyState.isEditMode && !AgencyState.isLoginIdValid) {
         errors.loginId = '관리자 아이디 중복확인을 해주세요';
     }
 
-    if (!formData.ceo.trim()) {
-        errors.ceo = '관리자 이름을 입력하세요';
+    if (!formData.managerName || !formData.managerName.trim()) {
+        errors.managerName = '관리자 이름을 입력하세요';
     }
 
-    if (!formData.email.trim()) {
-        errors.email = '관리자 이메일을 입력하세요';
+    if (!formData.email || !formData.email.trim()) {
+        errors.email = '이메일을 입력하세요';
     } else if (!Validation.email(formData.email)) {
         errors.email = '올바른 이메일 형식을 입력하세요';
     }
 
-    if (!formData.tel.trim()) {
-        errors.tel = '관리자 연락처를 입력하세요';
+    const telRaw = formData.tel ? formData.tel.replace(/-/g, '') : '';
+    if (!telRaw) {
+        errors.tel = '대리점 연락처를 입력하세요';
+    } else if (!telRegex.test(telRaw)) {
+        errors.tel = '올바른 전화번호 형식이 아닙니다.';
     }
 
     if (!AgencyState.isEditMode) {
-        if (!formData.password.trim()) {
+        if (!formData.password || !formData.password.trim()) {
             errors.password = '관리자 비밀번호를 입력하세요';
         } else if (formData.password.length < 6) {
             errors.password = '비밀번호는 6자 이상이어야 합니다';
         }
 
-        if (!formData.confirmPassword.trim()) {
+        if (!formData.confirmPassword || !formData.confirmPassword.trim()) {
             errors.confirmPassword = '비밀번호 확인을 입력하세요';
         } else if (formData.password !== formData.confirmPassword) {
             errors.confirmPassword = '비밀번호가 일치하지 않습니다';
@@ -719,7 +759,6 @@ function validateAgencyForm() {
     }
 
     AgencyState.formErrors = errors;
-
 
     Object.keys(errors).forEach(field => {
         const errorEl = document.getElementById(`${field}Error`);
@@ -731,6 +770,7 @@ function validateAgencyForm() {
     return Object.keys(errors).length === 0;
 }
 
+
 async function submitAgency() {
     if (!validateAgencyForm()) {
         Toast.error('입력 정보를 확인해주세요');
@@ -740,7 +780,7 @@ async function submitAgency() {
     try {
         if (AgencyState.isEditMode) {
 
-            const agencyId = AgencyState.editingAgency.id;
+            const agencyId = AgencyState.editingAgency.id;``
             const managerId = AgencyState.editingAgency.manager.id;
 
             const agencyUpdateDTO = {
@@ -903,7 +943,9 @@ function openAddressSearchModal() {
     modalBody.id = 'address-embed-layer';
     modalBody.style.height = '400px';
     modalBody.style.padding = '0';
-    modalBody.style.overflow = 'hidden';
+    // modalBody.style.overflow = 'hidden';
+    modalBody.style.flex = 'none';
+    modalBody.style.overflow = 'auto';
 
     modalContent.append(modalHeader, modalBody);
     modalOverlay.appendChild(modalContent);
@@ -920,6 +962,46 @@ function closeAddressSearchModal() {
             document.body.style.overflow = '';
         }
     }
+}
+
+function formatBizNum(value) {
+    const number = value.replace(/[^0-9]/g, '');
+    let result = '';
+    if (number.length < 4) {
+        result = number;
+    } else if (number.length < 6) {
+        result = `${number.slice(0, 3)}-${number.slice(3)}`;
+    } else {
+        result = `${number.slice(0, 3)}-${number.slice(3, 5)}-${number.slice(5, 10)}`;
+    }
+    return result;
+}
+
+function formatTel(value) {
+    const number = value.replace(/[^0-9]/g, '');
+    const len = number.length;
+    let result = '';
+    if (number.length === 0) return '';
+    if (number.startsWith('1')) {
+        if (len <= 4) return number;
+        return `${number.slice(0, 4)}-${number.slice(4, 8)}`;
+    }
+
+    if (number.startsWith('02')) {
+        if (len <= 2) return number;
+        if (len <= 5) return `${number.slice(0, 2)}-${number.slice(2)}`;
+        if (len <= 9) return `${number.slice(0, 2)}-${number.slice(2, 5)}-${number.slice(5, 9)}`;
+        return `${number.slice(0, 2)}-${number.slice(2, 6)}-${number.slice(6, 10)}`;
+    }
+
+    if (number.startsWith('0')) {
+        if (len <= 3) return number;
+        if (len <= 7) return `${number.slice(0, 3)}-${number.slice(3, 7)}`; //
+        if (len <= 10) return `${number.slice(0, 3)}-${number.slice(3, 6)}-${number.slice(6, 10)}`;
+        return `${number.slice(0, 3)}-${number.slice(3, 7)}-${number.slice(7, 11)}`;
+    }
+
+    return result;
 }
 
 

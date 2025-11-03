@@ -13,5 +13,4 @@ public class BaseUsrDTO {
     private String loginId;
     private String name;
     private String role;
-    private String email;
 }

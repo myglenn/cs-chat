@@ -2,9 +2,11 @@ package com.enjoy.common.dto;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.ToString;
 
 @Getter
 @Builder
+@ToString
 public class FileInfoDTO {
     private Long id;
     private String name;

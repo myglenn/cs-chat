@@ -24,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -111,6 +113,15 @@ public class AuthController {
         }
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+    }
+
+    @PostMapping("/check-id")
+    public ResponseEntity<Map<String, Boolean>> checkLoginIdDuplicate(@RequestBody Map<String, String> payload) {
+        String loginId = payload.get("loginId");
+
+        boolean isDuplicate = usrService.isLoginIdDuplicate(loginId);
+        Map<String, Boolean> response = Map.of("isDuplicate", isDuplicate);
+        return ResponseEntity.ok(response);
     }
 
 }

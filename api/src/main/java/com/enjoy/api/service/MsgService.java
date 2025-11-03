@@ -65,9 +65,9 @@ public class MsgService {
                         .chnId(msg.getChnId())
                         .chnId(msg.getChnId())
                         .sender(senderMap.get(msg.getSenderId()))
+                        .files(convertFiles(msg))
                         .build())
                 .collect(Collectors.toList());
-
         return dtoList;
     }
 
@@ -76,17 +76,20 @@ public class MsgService {
         long msgId = cmnSeqService.getNextSequenceValue("MSG");
         Msg msg = Msg.builder()
                 .chnId(chnId)
+                .id(msgId)
                 .senderId(sender.getId())
                 .content(requestDTO.getContent())
                 .regDt(LocalDateTime.now())
                 .build();
         msgMapper.insert(msg);
         if (!CollectionUtils.isEmpty(requestDTO.getFileIds())) {
+            final Long newMsgId = msg.getId();
             List<MsgFileMap> mapList = requestDTO.getFileIds().stream()
-                    .map(fileId -> new MsgFileMap(msgId, fileId))
+                    .map(fileId -> new MsgFileMap(newMsgId, fileId))
                     .collect(Collectors.toList());
             msgFileMapMapper.bulkInsert(mapList);
         }
+
         MsgInfoDTO msgInfo = convertToInfoDTO(msg);
         List<String> participantLoginIds = chnService.findParticipantLoginIdsByChnId(chnId);
         participantLoginIds.forEach(id -> {
@@ -104,6 +107,7 @@ public class MsgService {
                         .loginId(sender.getLoginId())
                         .name(sender.getName())
                         .build())
+                .files(msgInfo.getFiles())
                 .build();
     }
 
@@ -133,18 +137,12 @@ public class MsgService {
         return cmnFileService.getOriginalFilename(fileId);
     }
 
-    private MsgInfoDTO convertToInfoDTO(Msg msg) {
-        UsrInfoDTO senderInfo = usrMapper.findInfoById(msg.getSenderId()).orElse(null);
-
-        List<FileInfoDTO> fileInfoList = new ArrayList<>();
-
-
+    private List<FileInfoDTO> convertFiles(Msg msg) {
         List<Long> fileIds = msgFileMapMapper.findFileIdsByMsgId(msg.getId());
 
         if (!CollectionUtils.isEmpty(fileIds)) {
-
             List<CmnFile> files = cmnFileService.findFilesByIds(fileIds);
-
+            List<FileInfoDTO> fileInfoList = new ArrayList<>();
 
             fileInfoList = files.stream()
                     .map(cmnFile -> FileInfoDTO.builder()
@@ -156,7 +154,16 @@ public class MsgService {
                             .downloadUrl("/api/msg/files/download/" + cmnFile.getId())
                             .build())
                     .collect(Collectors.toList());
+
+            return fileInfoList;
         }
+        return Collections.emptyList();
+    }
+
+    private MsgInfoDTO convertToInfoDTO(Msg msg) {
+        UsrInfoDTO senderInfo = usrMapper.findInfoById(msg.getSenderId()).orElse(null);
+
+        List<FileInfoDTO> fileInfoList = convertFiles(msg);
 
         return MsgInfoDTO.builder()
                 .id(msg.getId())

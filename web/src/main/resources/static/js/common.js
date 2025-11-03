@@ -950,7 +950,7 @@ async function saveProfile() {
         return;
     }
 
-    const payload = { name: name, position: position };
+    const payload = { name: name };
 
     try {
         const updatedUser = await apiClient.put(`/user/me`, payload);

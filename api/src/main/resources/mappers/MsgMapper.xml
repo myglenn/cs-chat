@@ -4,9 +4,6 @@
 <mapper namespace="com.enjoy.api.mapper.MsgMapper">
 
     <insert id="insert" parameterType="com.enjoy.common.domain.Msg">
-        <selectKey keyProperty="id" resultType="long" order="BEFORE">
-            SELECT GET_NEXT_SEQ_VAL('MSG') AS ID
-        </selectKey>
         INSERT INTO MSG (ID, CONTENT, CHN_ID, SENDER_ID)
         VALUES (#{id}, #{content}, #{chnId}, #{senderId})
     </insert>

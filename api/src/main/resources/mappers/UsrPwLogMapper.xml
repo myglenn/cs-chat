@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.enjoy.api.mapper.UsrPwLogMapper">
+
+    <select id="findCurrentPasswordByUsrId" resultType="string">
+        SELECT PW
+        FROM USR_PW
+        WHERE USR_ID = #{usrId}
+    </select>
+
+    <insert id="insertLog">
+        INSERT INTO USR_PW_LOG (ID, USR_ID, OLD_PW, REG_DT)
+        VALUES (
+                   #{id},
+                   #{usrId},
+                   #{oldPw},
+                   CURRENT_TIMESTAMP()
+               )
+    </insert>
+</mapper>
