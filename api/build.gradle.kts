@@ -25,4 +25,6 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-websocket")
 
     implementation ("org.mybatis:mybatis-typehandlers-jsr310:1.0.2")
+
+    implementation ("org.springframework.boot:spring-boot-starter-mail")
 }
