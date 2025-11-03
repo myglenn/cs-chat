@@ -7,6 +7,8 @@ async function handleLogin(event) {
     errorMessage.textContent = '';
     const loginId = loginForm.loginId.value;
     const password = loginForm.password.value;
+    const saveId = loginForm.saveId.checked;
+    const rememberMe = loginForm.rememberMe.checked;
 
     try {
         const response = await fetch('/api/auth/login', {
@@ -21,7 +23,13 @@ async function handleLogin(event) {
 
         const tokenData = await response.json();
 
-        apiClient.setToken(tokenData.accessToken);
+        if (saveId) {
+            localStorage.setItem('savedLoginId', loginId);
+        } else {
+            localStorage.removeItem('savedLoginId');
+        }
+
+        apiClient.setToken(tokenData.accessToken, rememberMe);
         window.location.href = '/';
 
     } catch (error) {

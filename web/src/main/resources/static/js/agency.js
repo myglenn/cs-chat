@@ -678,7 +678,7 @@ async function checkLoginId() {
     }
 
     try {
-        const response = await apiClient.post('/api/auth/check-id', {loginId: loginId});
+        const response = await apiClient.post('/auth/check-id', {loginId: loginId});
         AgencyState.isLoginIdChecked = true;
         if (response.isDuplicate) {
             AgencyState.isLoginIdValid = false;

@@ -6,14 +6,19 @@ class ApiClient {
         this.subscriptions = new Map();
     }
 
-    setToken(accessToken) {
+    setToken(accessToken, rememberMe = false) {
         this.accessToken = accessToken;
-        sessionStorage.setItem('accessToken', accessToken);
+        if (rememberMe) {
+            localStorage.setItem('accessToken', accessToken);
+        } else {
+            sessionStorage.setItem('accessToken', accessToken);
+        }
     }
 
     clearToken() {
         this.accessToken = null;
         sessionStorage.removeItem('accessToken');
+        localStorage.removeItem('accessToken');
     }
 
     async get(path) {

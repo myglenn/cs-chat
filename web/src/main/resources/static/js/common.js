@@ -242,7 +242,7 @@ const Toast = {
                 iconType = 'info';
         }
 
-        const iconElement = Icon({ type: iconType, size: 20 });
+        const iconElement = Icon({type: iconType, size: 20});
         const messageSpan = document.createElement('span');
         messageSpan.textContent = message;
         toast.innerHTML = '';
@@ -569,6 +569,7 @@ const Validation = {
         return value1 === value2;
     }
 };
+
 function formatDate(dateString) {
     const date = new Date(dateString);
     const year = date.getFullYear();
@@ -588,6 +589,7 @@ function filterData(data, searchTerm, fields) {
         });
     });
 }
+
 function initProfileModal() {
     const openProfileBtn = document.getElementById('openProfileModal');
     const openProfileBtnMobile = document.getElementById('openProfileModalMobile');
@@ -604,7 +606,6 @@ function initProfileModal() {
         });
     }
 }
-
 
 
 function createProfileForm(user) {
@@ -629,25 +630,9 @@ function createProfileForm(user) {
 
 
 
-    const userTypeSelect = document.createElement('select');
-    userTypeSelect.id = 'profileUserType';
-    userTypeSelect.className = 'form-select';
-    userTypeSelect.disabled = true;
-    const optionAdmin = document.createElement('option');
-    optionAdmin.value = 'SUPER_ADMIN';
-    optionAdmin.textContent = '최고관리자';
-    if (user.role === 'SUPER_ADMIN') optionAdmin.selected = true;
-    const optionManager = document.createElement('option');
-    optionManager.value = 'AGENCY_ADMIN';
-    optionManager.textContent = '담당자';
-    if (user.role === 'AGENCY_ADMIN') optionManager.selected = true;
-    userTypeSelect.append(optionAdmin, optionManager);
-
-
     form.append(
         createFormGroup('profileName', '이름', nameInput, 'profileNameError'),
-        createFormGroup('profileEmail', '이메일', emailInput, 'profileEmailError'),
-        createFormGroup('profileUserType', '권한', userTypeSelect)
+        createFormGroup('profileEmail', '이메일', emailInput, 'profileEmailError')
     );
 
 
@@ -702,7 +687,7 @@ function showProfileModal() {
     const closeButton = document.createElement('button');
     closeButton.className = 'modal-close';
     closeButton.addEventListener('click', closeProfileModal);
-    closeButton.appendChild(Icon({ type: 'close', size: 20 }));
+    closeButton.appendChild(Icon({type: 'close', size: 20}));
     modalHeader.append(modalTitle, closeButton);
 
     const modalBody = document.createElement('div');
@@ -731,12 +716,9 @@ function showProfileModal() {
 }
 
 
-
-
-
 function openPasswordChangeModal(options) {
 
-    const { targetId, targetName, apiEndpoint, onSuccess, requireCurrentPassword = false } = options;
+    const {targetId, targetName, apiEndpoint, onSuccess, requireCurrentPassword = false} = options;
 
     closePasswordChangeModal();
 
@@ -756,7 +738,7 @@ function openPasswordChangeModal(options) {
     const closeBtn = document.createElement('button');
     closeBtn.className = 'modal-close';
     closeBtn.addEventListener('click', closePasswordChangeModal);
-    closeBtn.appendChild(Icon({ type: 'close', size: 20 }));
+    closeBtn.appendChild(Icon({type: 'close', size: 20}));
     modalHeader.append(modalTitle, closeBtn);
 
 
@@ -850,7 +832,7 @@ function openPasswordChangeModal(options) {
         if (hasError) return;
 
 
-        const payload = { newPassword: newPassword };
+        const payload = {newPassword: newPassword};
         if (requireCurrentPassword) {
             payload.currentPassword = currentPasswordInput.value;
         }
@@ -950,7 +932,7 @@ async function saveProfile() {
         return;
     }
 
-    const payload = { name: name };
+    const payload = {name: name};
 
     try {
         const updatedUser = await apiClient.put(`/user/me`, payload);
@@ -1069,10 +1051,11 @@ async function logout() {
         console.error('Logout failed:', error);
         Toast.error('로그아웃에 실패했습니다. 다시 시도해주세요.');
         apiClient.clearToken();
-        setTimeout(() => { window.location.href = '/login'; }, 1000);
+        setTimeout(() => {
+            window.location.href = '/login';
+        }, 1000);
     }
 }
-
 
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1081,6 +1064,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const apiClient = new ApiClient();
     window.apiClient = apiClient;
+
 
     const themeToggle = document.getElementById('themeToggle');
     const themeToggleMobile = document.getElementById('themeToggleMobile');
@@ -1097,7 +1081,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     initMobileSidebar();
 
-    const token = sessionStorage.getItem('accessToken');
+    let token = localStorage.getItem('accessToken');
+    if (!token) {
+        token = sessionStorage.getItem('accessToken');
+    }
     if (token) {
         apiClient.setToken(token);
         await fetchAndSetCurrentUser();
