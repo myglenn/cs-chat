@@ -683,8 +683,13 @@ async function selectConsultation(id, isUserAction = false) {
         const isAdmin = (userRole === 'SUPER_ADMIN' || userRole === 'OPERATOR');
 
         if (currentCon && currentCon.status !== 'CLOSED') {
-            completeBtn.style.display = 'flex';
+            if (isAdmin) {
+                completeBtn.style.display = 'flex';
+            } else {
+                completeBtn.style.display = 'none';
+            }
             inputContainer.style.display = 'flex';
+
         } else {
             completeBtn.style.display = 'none';
             inputContainer.style.display = 'none';
