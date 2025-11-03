@@ -11,17 +11,18 @@
             <if test="condition.code != null and condition.code != ''">
                 AND A.CODE LIKE CONCAT('%', #{condition.code}, '%')
             </if>
+
             <if test="condition.name != null and condition.name != ''">
-                AND A.NAME LIKE CONCAT('%', #{condition.name}, '%')
+                AND (
+                A.NAME LIKE CONCAT('%', #{condition.name}, '%')
+                OR D.BIZ_NUM LIKE CONCAT('%', #{condition.name}, '%')
+                )
             </if>
         </where>
     </sql>
 
     <insert id="insert" parameterType="com.enjoy.common.domain.Agc">
-        <selectKey keyProperty="id" resultType="long" order="BEFORE">
-            SELECT GET_NEXT_SEQ_VAL('AGC') AS ID
-        </selectKey>
-        INSERT INTO AGC (ID, CODE, NAME) VALUES (#{id}, #{code}, #{name})
+        INSERT INTO AGC (ID, CODE, NAME, REG_DT) VALUES (#{id}, #{code}, #{name}, #{regDt})
     </insert>
     <update id="update">
         UPDATE AGC

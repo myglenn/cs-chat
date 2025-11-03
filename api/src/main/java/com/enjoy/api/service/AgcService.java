@@ -18,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,13 +29,17 @@ public class AgcService {
     private final AgcMapper agcMapper;
     private final AgcDtlMapper agcDtlMapper;
     private final UsrService usrService;
+    private final CmnSeqService cmnSeqService;
 
 
     @Transactional
     public AgcInfoDTO createAgency(AgcAddDTO requestDTO) {
+        long newAgcId = cmnSeqService.getNextSequenceValue("AGC");
         Agc agc = Agc.builder()
+                .id(newAgcId)
                 .code(requestDTO.getCode())
                 .name(requestDTO.getName())
+                .regDt(LocalDateTime.now())
                 .build();
         agcMapper.insert(agc);
 
@@ -88,8 +93,27 @@ public class AgcService {
     @Transactional(readOnly = true)
     public Page<AgcInfoDTO> findAllAgencies(AgcSearchCondition condition, Pageable pageable) {
         List<AgcInfoDTO> content = agcMapper.findWithPagingAndFilter(condition, pageable);
+        List<AgcInfoDTO> updatedContent = content.stream().map(agency -> {
+            UsrInfoDTO managerInfo = usrService.findFirstManagerByAgcId(agency.getId())
+                    .orElse(null);
+            return AgcInfoDTO.builder()
+                    .id(agency.getId())
+                    .code(agency.getCode())
+                    .name(agency.getName())
+                    .regDt(agency.getRegDt())
+                    .bizNum(agency.getBizNum())
+                    .email(agency.getEmail())
+                    .zipCode(agency.getZipCode())
+                    .baseAddr(agency.getBaseAddr())
+                    .dtlAddr(agency.getDtlAddr())
+                    .tel(agency.getTel())
+                    .ceo(agency.getCeo())
+                    .status(agency.getStatus())
+                    .manager(managerInfo)
+                    .build();
+        }).collect(Collectors.toList());
         long total = agcMapper.countWithFilter(condition);
-        return new PageImpl<>(content, pageable, total);
+        return new PageImpl<>(updatedContent, pageable, total);
     }
 
 
@@ -125,6 +149,14 @@ public class AgcService {
             return;
         }
         agcMapper.bulkUpdateStatus(ids, status);
+    }
+
+    @Transactional
+    public void updateAgencyManagerPassword(Long agcId, String newPassword) {
+        UsrInfoDTO manager = usrService.findFirstManagerByAgcId(agcId)
+                .orElseThrow(() -> new BusinessException(ErrorCodes.USER_NOT_FOUND, agcId));
+        Long managerId = manager.getId();
+        usrService.updateUserPassword(managerId, newPassword);
     }
 
 

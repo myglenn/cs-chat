@@ -145,6 +145,8 @@
     gap: 0.5rem;
     background-color: var(--background);
     flex-shrink: 0;
+    position: relative;
+    z-index: 20;
 }
 
 .chat-search-input {
@@ -882,6 +884,7 @@ input[type="checkbox"]:checked
 
     .chat-layout.chat-active .chat-view {
         display: flex;
+        width: 100%;
     }
 }
 

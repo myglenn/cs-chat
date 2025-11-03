@@ -79,4 +79,15 @@ public class AgcAdmController {
         return ResponseEntity.ok().build();
     }
 
+    @PutMapping("/{agcId}/password")
+    public ResponseEntity<Void> updateAgencyManagerPassword(
+            @PathVariable Long agcId,
+            @RequestBody Map<String, String> payload) {
+
+        String newPassword = payload.get("newPassword");
+        agcService.updateAgencyManagerPassword(agcId, newPassword);
+
+        return ResponseEntity.ok().build();
+    }
+
 }

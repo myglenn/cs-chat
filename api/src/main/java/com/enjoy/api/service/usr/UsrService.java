@@ -1,6 +1,9 @@
 package com.enjoy.api.service.usr;
 
 import com.enjoy.api.mapper.UsrMapper;
+import com.enjoy.api.mapper.UsrPwLogMapper;
+import com.enjoy.api.mapper.UsrPwMapper;
+import com.enjoy.api.service.CmnSeqService;
 import com.enjoy.common.domain.Usr;
 import com.enjoy.common.dto.usr.*;
 import com.enjoy.common.exception.BusinessException;
@@ -13,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -21,7 +25,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UsrService {
     private final UsrMapper usrMapper;
+    private final UsrPwMapper usrPwMapper;
     private final PasswordEncoder passwordEncoder;
+    private final CmnSeqService cmnSeqService;
+    private final UsrPwLogMapper usrPwLogMapper;
 
     @Transactional(readOnly = true)
     public UsrInfoDTO findMyInfo(String loginId) {
@@ -32,7 +39,6 @@ public class UsrService {
                 .loginId(user.getLoginId())
                 .id(user.getId())
                 .name(user.getName())
-                .email(user.getEmail())
                 .role(user.getRole())
                 .build();
     }
@@ -54,29 +60,7 @@ public class UsrService {
     }
 
 
-    @Transactional(readOnly = true)
-    public UsrInfoDTO findUserByIdByAgencyAdmin(String adminLoginId, Long userId) {
-        Usr admin = usrMapper.findByLoginId(adminLoginId).orElseThrow(() -> new BusinessException(ErrorCodes.USER_NOT_FOUND, "ID: " + userId));
-        Long myAgencyId = admin.getAgcId();
-
-        Usr targetUser = usrMapper.findById(userId).orElseThrow(() -> new BusinessException(ErrorCodes.USER_NOT_FOUND, adminLoginId));
-
-        if (!myAgencyId.equals(targetUser.getAgcId())) {
-            throw new BusinessException(ErrorCodes.ACCESS_DENIED);
-        }
-
-        return convertToInfoDTO(targetUser);
-    }
-
     public Page<UsrInfoDTO> findAllUsersBySuperAdmin(UsrSearchCondition condition, Pageable pageable) {
-        return findUsersInternal(condition, pageable);
-    }
-
-    public Page<UsrInfoDTO> findUsersByAgencyAdmin(String adminLoginId, UsrSearchCondition condition, Pageable pageable) {
-        Usr admin = usrMapper.findByLoginId(adminLoginId)
-                .orElseThrow(() -> new BusinessException(ErrorCodes.USER_NOT_FOUND, "ID: " + adminLoginId));
-        Long myAgencyId = admin.getAgcId();
-        condition.setAgcId(myAgencyId);
         return findUsersInternal(condition, pageable);
     }
 
@@ -97,9 +81,9 @@ public class UsrService {
                 .id(usr.getId())
                 .loginId(usr.getLoginId())
                 .name(usr.getName())
-                .email(usr.getEmail())
                 .role(usr.getRole())
                 .agcId(usr.getAgcId())
+                .regDt(usr.getRegDt())
                 .build();
     }
 
@@ -120,15 +104,25 @@ public class UsrService {
             throw new BusinessException(ErrorCodes.DUPLICATE_LOGIN_ID);
         }
 
+        long newUsrId = cmnSeqService.getNextSequenceValue("USR");
+
         Usr newUser = Usr.builder()
+                .id(newUsrId)
                 .loginId(loginId)
                 .pw(passwordEncoder.encode(password))
                 .name(name)
                 .agcId(agcId)
                 .role(role)
+                .regDt(LocalDateTime.now())
                 .build();
 
         usrMapper.insert(newUser);
+
+        String encodedPassword = passwordEncoder.encode(password);
+        usrPwMapper.insert(newUser.getId(), encodedPassword);
+        long logId = cmnSeqService.getNextSequenceValue("USR_PW_LOG");
+        usrPwLogMapper.insertLog(logId, newUser.getId(), "INIT");
+
         return convertToInfoDTO(newUser);
     }
 
@@ -152,7 +146,6 @@ public class UsrService {
 
         userToUpdate.updateInfo(
                 requestDTO.getName(),
-                requestDTO.getEmail(),
                 requestDTO.getRole(),
                 requestDTO.getAgcId()
         );
@@ -172,18 +165,30 @@ public class UsrService {
         usrMapper.updateStatusAndClearInfo(userToDelete);
     }
 
-    public void deleteUserByAgencyAdmin(String adminLoginId, Long userId) {
-        Usr admin = usrMapper.findByLoginId(adminLoginId)
-                .orElseThrow(() -> new BusinessException(ErrorCodes.USER_NOT_FOUND, "Admin Login ID: " + adminLoginId));
+    @Transactional(readOnly = true)
+    public boolean isLoginIdDuplicate(String loginId) {
+        return usrMapper.existsByLoginId(loginId) > 0;
+    }
 
-        Long myAgencyId = admin.getAgcId();
-        Usr userToDelete = usrMapper.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCodes.USER_NOT_FOUND, "User ID: " + userId));
+    @Transactional
+    public void updateUserPassword(Long userId, String newPassword) {
+        Usr user = usrMapper.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCodes.USER_NOT_FOUND, "ID: " + userId));
+        String oldPw = usrPwLogMapper.findCurrentPasswordByUsrId(userId)
+                .orElse("UNKNOWN");
+        String encodedPassword = passwordEncoder.encode(newPassword);
+        usrPwMapper.update(userId, encodedPassword);
+        long logId = cmnSeqService.getNextSequenceValue("USR_PW_LOG");
+        usrPwLogMapper.insertLog(logId, userId, oldPw);
+    }
 
-        if (!myAgencyId.equals(userToDelete.getAgcId())) {
-            throw new BusinessException(ErrorCodes.ACCESS_DENIED);
+    @Transactional
+    public void updateMyPassword(String loginId, String currentPassword, String newPassword) {
+        UsrAccountDTO userAccount = this.findUserAccountByLoginId(loginId);
+        if (!passwordEncoder.matches(currentPassword, userAccount.getPw())) {
+            throw new BusinessException(ErrorCodes.INVALID_PASSWORD, "현재 비밀번호가 일치하지 않습니다.");
         }
-        userToDelete.softDelete();
-        usrMapper.updateStatusAndClearInfo(userToDelete);
+        this.updateUserPassword(userAccount.getId(), newPassword);
     }
 }
+

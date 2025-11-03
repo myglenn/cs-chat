@@ -658,8 +658,7 @@ async function saveUser() {
     try {
         if (UserState.isEditMode) {
             payload = {
-                name: formData.name,
-                role: formData.userType
+                name: formData.name
             };
             await apiClient.put(`/admin/users/${UserState.editingUser.id}`, payload);
             Toast.success('사용자 정보가 수정되었습니다.');

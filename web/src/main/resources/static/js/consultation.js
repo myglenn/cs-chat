@@ -261,6 +261,8 @@ async function openDmModal() {
         if (window.innerWidth <= 768) {
             document.getElementById('chatLayout').classList.add('chat-active');
         }
+        const newState = { consultationId: 'new' };
+        history.pushState(newState, '', '#chat=new');
     });
 
     modalFooter.append(cancelBtn, submitBtn);
@@ -674,6 +676,8 @@ async function selectConsultation(id, isUserAction = false) {
 
         const completeBtn = document.getElementById('completeBtn');
         const inputContainer = document.getElementById('chatInputContainer');
+        const userRole = AppState.currentUser.role;
+        const isAdmin = (userRole === 'SUPER_ADMIN' || userRole === 'OPERATOR');
 
         if (currentCon && currentCon.status !== 'CLOSED') {
             completeBtn.style.display = 'flex';
@@ -989,7 +993,7 @@ function renderMessages(messages, unreadCountToScroll = 0) {
         toggleBtn.onclick = toggleNoticeCard;
 
         const noticeCard = createElementSafe('div', {
-            className: 'consultation-notice-card',
+            className: 'consultation-notice-card collapsed',
             id: 'consultationNoticeCard',
             children: [
                 createElementSafe('div', {
@@ -1595,6 +1599,144 @@ function formatFileSize(bytes) {
     return parseFloat((bytes / Math.pow(k, index)).toFixed(1)) + ' ' + sizes[index];
 }
 
+async function submitComplete(selectedCategory) {
+    // event.preventDefault();
+
+    const category = selectedCategory;
+    // const memo = document.getElementById('completeMemo').value.trim();
+
+    if (!category) {
+        Toast.error("카테고리를 선택하세요.");
+        return;
+    }
+
+    if (!ConsultationState.currentConsultation) {
+        Toast.error("선택된 상담이 없습니다.");
+        return;
+    }
+
+    const consultationId = ConsultationState.currentConsultation.id;
+    const payload = {
+        category: category,
+        memo: ""
+    };
+
+    try {
+        await apiClient.put(`/admin/channels/${consultationId}/close`, payload);
+        Toast.success('상담이 완료되었습니다');
+        // closeCompleteModal(); // 이미 2단계에서 모달을 닫음
+        const consultation = ConsultationState.consultations.find(c => c.id === consultationId);
+        if (consultation) {
+            consultation.status = 'CLOSED';
+        }
+        ConsultationState.currentConsultation.status = 'CLOSED';
+        selectConsultation(consultationId, false);
+        renderConsultationList();
+
+    } catch (error) {
+        console.error("상담 완료 처리 실패:", error);
+        Toast.error("상담 완료 처리에 실패했습니다.");
+    }
+}
+
+function openCompleteModal() {
+    // 이전 모달이 있다면 제거
+    const existingModal = document.getElementById('completeModal');
+    if (existingModal) existingModal.remove();
+    const categories = AppState.commonCodes['CHN_CATEGORY'] || [];
+    let selectedCategory = categories.length > 0 ? categories[0].code : "";
+    const modalOverlay = createElementSafe('div', {
+        id: 'completeModal',
+        className: 'modal-overlay active registration-modal'
+    });
+    const modalContent = createElementSafe('div', {
+        className: 'modal-content',
+        attributes: { style: 'max-width: 25rem;' } // 모달 너비 조절
+    });
+    const closeBtn = createElementSafe('button', {
+        className: 'modal-close',
+        children: [Icon({ type: 'close', size: 20 })]
+    });
+    closeBtn.addEventListener('click', () => modalOverlay.remove());
+
+    const modalHeader = createElementSafe('div', {
+        className: 'modal-header',
+        children: [
+            createElementSafe('h2', { className: 'modal-title', text: '상담 카테고리 선택' }),
+            closeBtn
+        ]
+    });
+    const modalBody = createElementSafe('div', {
+        className: 'modal-body',
+        attributes: { style: 'display: flex; flex-direction: column; gap: 1rem;' }
+    });
+    categories.forEach((category, index) => {
+        const radioId = `category-radio-${category.code}`;
+
+        const radioInput = createElementSafe('input', {
+            id: radioId,
+            attributes: {
+                type: 'radio',
+                name: 'completeCategory',
+                value: category.code,
+                style: 'display: none;'
+            }
+        });
+        if (index === 0) radioInput.checked = true;
+        const customRadio = createElementSafe('span', {
+            className: 'custom-radio-ui',
+            attributes: { style: 'width: 20px; height: 20px; border: 2px solid var(--border); border-radius: 50%; display: inline-block; position: relative; margin-right: 0.75rem; flex-shrink: 0;' }
+        });
+        const customRadioInner = createElementSafe('span', {
+            attributes: { style: 'width: 12px; height: 12px; background-color: var(--primary); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none;' }
+        });
+        customRadio.appendChild(customRadioInner);
+        const label = createElementSafe('label', {
+            className: 'category-radio-label',
+            attributes: {
+                for: radioId,
+                style: 'display: flex; align-items: center; cursor: pointer; font-size: 1rem;'
+            },
+            children: [
+                radioInput,
+                customRadio,
+                createElementSafe('span', { text: category.name })
+            ]
+        });
+        radioInput.addEventListener('change', () => {
+            selectedCategory = radioInput.value;
+            modalBody.querySelectorAll('.custom-radio-ui span').forEach(inner => inner.style.display = 'none');
+            customRadioInner.style.display = 'block';
+        });
+        if (index === 0) customRadioInner.style.display = 'block';
+        modalBody.appendChild(label);
+    });
+
+    const modalFooter = createElementSafe('div', {
+        className: 'modal-footer',
+        attributes: { style: 'padding-top: 0;' }
+    });
+
+    const submitBtn = createElementSafe('button', {
+        type: 'button',
+        className: 'btn btn-primary w-full',
+        text: '완료'
+    });
+
+    submitBtn.addEventListener('click', () => {
+        submitComplete(selectedCategory);
+        modalOverlay.remove();
+    });
+
+    modalFooter.appendChild(submitBtn);
+
+    // --- 모달 조립 및 표시 ---
+    modalContent.append(modalHeader, modalBody, modalFooter);
+    modalOverlay.appendChild(modalContent);
+    document.body.appendChild(modalOverlay);
+    document.body.style.overflow = 'hidden';
+}
+
 
 document.addEventListener('DOMContentLoaded', async () => {
 
@@ -1666,20 +1808,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
     if (backBtn) {
-
         backBtn.addEventListener('click', () => {
-
-            if (ConsultationState.currentConsultation && ConsultationState.currentConsultation.id === null) {
-
-                const chatLayout = document.getElementById('chatLayout');
-                const chatView = document.getElementById('chatView');
-                if (chatLayout) chatLayout.classList.remove('chat-active');
-                if (chatView) chatView.classList.remove('active');
-                ConsultationState.currentConsultation = null;
-                return;
-            }
-
-
             closeChat();
         });
     }
@@ -1828,6 +1957,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
             fileInput.value = '';
+        });
+    }
+
+    const completeBtn = document.getElementById('completeBtn');
+    if (completeBtn) {
+        completeBtn.addEventListener('click', () => {
+            openCompleteModal();
         });
     }
 

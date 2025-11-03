@@ -70,7 +70,9 @@ public class ChnService {
         chn.close(requestDTO.getCategory());
         chnMapper.update(chn);
 
-        ChnLog log = ChnLog.builder().chnId(chnId).usrId(resolverId)
+        long chnLogId = cmnSeqService.getNextSequenceValue("CHN_LOG");
+
+        ChnLog log = ChnLog.builder().id(chnLogId).chnId(chnId).usrId(resolverId)
                 .oldStatus(oldStatus).newStatus(chn.getStatus()).build();
         chnLogMapper.insert(log);
     }

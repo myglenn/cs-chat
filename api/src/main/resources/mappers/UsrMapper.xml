@@ -7,7 +7,6 @@
                UP.PW,
                U.NAME,
                U.ROLE,
-               U.EMAIL,
                U.AGC_ID
         FROM USR U
                  JOIN
@@ -41,14 +40,23 @@
             <if test="condition.agcId != null">
                 AND USR.AGC_ID = #{condition.agcId}
             </if>
-            <if test="condition.role != null and condition.role != ''">
-                AND USR.ROLE = #{condition.rol e}
-            </if>
+            <choose>
+                <when test="condition.role != null and condition.role != ''">
+                    AND USR.ROLE = #{condition.role}
+                </when>
+                <otherwise>
+                    AND USR.ROLE IN ('SUPER_ADMIN', 'OPERATOR')
+                </otherwise>
+            </choose>
             <if test="condition.loginId != null and condition.loginId != ''">
                 AND USR.LOGIN_ID LIKE CONCAT('%', #{condition.loginId}, '%')
             </if>
+
             <if test="condition.name != null and condition.name != ''">
-                AND USR.NAME LIKE CONCAT('%', #{condition.name}, '%')
+                AND (
+                USR.NAME LIKE CONCAT('%', #{condition.name}, '%')
+                OR USR.LOGIN_ID LIKE CONCAT('%', #{condition.name}, '%')
+                )
             </if>
         </where>
     </sql>
@@ -71,19 +79,14 @@
     </select>
 
     <insert id="insert" parameterType="com.enjoy.common.domain.Usr">
-        <selectKey keyProperty="id" resultType="long" order="BEFORE">
-            SELECT GET_NEXT_SEQ_VAL('USR') AS ID
-        </selectKey>
         INSERT
-        INTO USR (ID, LOGIN_ID, EMAIL, NAME, ROLE, AGC_ID, REG_DT) VALUES (
-        #{id},
-        #{loginId},
-        #{email},
-        #{name},
-        #{role},
-        #{agcId},
-        #{regDt}
-        )
+        INTO USR (ID, LOGIN_ID, NAME, ROLE, AGC_ID, REG_DT)
+        VALUES (#{id},
+                #{loginId},
+                #{name},
+                #{role},
+                #{agcId},
+                #{regDt})
     </insert>
 
     <select id="existsByLoginId" resultType="integer" parameterType="string">

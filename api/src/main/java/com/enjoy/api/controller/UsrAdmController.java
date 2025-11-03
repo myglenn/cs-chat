@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/admin/users")
 @RequiredArgsConstructor
@@ -55,4 +57,16 @@ public class UsrAdmController {
         usrService.deleteUserBySuperAdmin(userId);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/{userId}/password")
+    public ResponseEntity<Void> updateUserPassword(
+            @PathVariable Long userId,
+            @RequestBody Map<String, String> payload) {
+
+        String newPassword = payload.get("newPassword");
+        usrService.updateUserPassword(userId, newPassword);
+
+        return ResponseEntity.ok().build();
+    }
+
 }

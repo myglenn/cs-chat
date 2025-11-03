@@ -216,7 +216,8 @@
 .address-modal .modal-content {
     max-width: 37.5rem;
     max-height: 80svh;
-    overflow: visible;
+    /*overflow: visible;*/
+    overflow-y: auto;
 }
 
 .address-search-wrapper {
@@ -428,5 +429,12 @@
 @media (max-width: 767px) {
     .page-header .btn-primary {
         display: none;
+    }
+    .address-modal .modal-content {
+        height: auto;
+        border-radius: var(--radius-lg);
+        max-width: 37.5rem;
+        max-height: 80svh;
+        width: calc(100% - 2rem);
     }
 }
