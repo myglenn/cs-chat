@@ -52,6 +52,8 @@ RUN gradle build -x test --no-daemon
 # docker-compose에서 받은 모듈 인자 사용 (web)
 ARG WAR_MODULE=web
 
+ENV MODULE_TO_RUN=${WAR_MODULE}
+
 # 포트 열기
 EXPOSE 8080
 
