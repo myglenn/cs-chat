@@ -22,6 +22,10 @@ services:
       - spring.data.redis.password=${REDIS_PASSWORD}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - LOGGING_FILE_PATH=/app/logs
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
