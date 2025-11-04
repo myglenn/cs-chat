@@ -18,7 +18,7 @@ COPY . .
 # 의존성은 캐시된 상태로 빌드 실행
 RUN gradle build -x test --no-daemon
 
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jdk-slim
 WORKDIR /app
 
 # ARG로 빌드 시 사용할 모듈을 지정할 수 있습니다.
