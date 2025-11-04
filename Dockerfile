@@ -59,4 +59,4 @@ EXPOSE 8080
 
 # 문제가 되는 2단계(FROM openjdk...) 없이,
 #    여기서 바로 WAR 파일을 실행
-CMD ["sh", "-c", "java -jar /app/${MODULE_TO_RUN}/build/libs/*.war"]
+CMD ["sh", "-c", "java -jar /app/${MODULE_TO_RUN}/build/libs/*[!-plain].war"]
