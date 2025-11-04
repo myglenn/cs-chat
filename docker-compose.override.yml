@@ -11,6 +11,7 @@ services:
       - "8080:8080"
     volumes:
       - ./logs:/app/logs
+      - ~/.gradle/caches:/root/.gradle/caches
     environment:
       - SPRING_PROFILES_ACTIVE=dev
       - SPRING_DATASOURCE_URL=jdbc:mariadb://host.docker.internal:3306/CS_CHAT
