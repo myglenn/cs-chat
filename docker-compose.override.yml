@@ -20,7 +20,7 @@ services:
 
       spring.data.redis.host: host.docker.internal
       spring.data.redis.port: 6379
-      spring.data.redis.password: ${spring.data.redis.password} # .env에서 읽어옴
+      spring.data.redis.password: ${MY_REDIS_PASSWORD}
 
       REDIS_HOST: host.docker.internal
       REDIS_PORT: 6379
