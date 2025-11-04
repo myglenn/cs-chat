@@ -19,10 +19,10 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - spring.data.redis.host=host.docker.internal
       - spring.data.redis.port=6379
-      - spring.data.redis.password=${REDIS_PASSWORD}
+      - spring.data.redis.password=${MY_PREDIS_PASSWORD}
       - REDIS_HOST=host.docker.internal
       - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_PASSWORD=${MY_REDIS_PASSWORD}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - LOGGING_FILE_PATH=/app/logs
       - MAIL_HOST=${MAIL_HOST}
