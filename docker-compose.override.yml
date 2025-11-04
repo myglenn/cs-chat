@@ -19,7 +19,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - spring.data.redis.host=host.docker.internal
       - spring.data.redis.port=6379
-      - spring.data.redis.password=${MY_REDIS_PASSWORD}
+      - spring.data.redis.password= ${spring.data.redis.password}
       - REDIS_HOST=host.docker.internal
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${MY_REDIS_PASSWORD}
