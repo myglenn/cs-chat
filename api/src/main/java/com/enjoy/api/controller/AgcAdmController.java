@@ -7,6 +7,7 @@ import com.enjoy.common.dto.agc.AgcSearchCondition;
 import com.enjoy.common.dto.agc.AgcUpdateDTO;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,8 +29,11 @@ public class AgcAdmController {
 
 
     @PostMapping
-    public ResponseEntity<AgcInfoDTO> createAgency(@RequestBody AgcAddDTO requestDTO) {
-        AgcInfoDTO createdAgency = agcService.createAgency(requestDTO);
+    public ResponseEntity<AgcInfoDTO> createAgency(@RequestBody AgcAddDTO requestDTO,
+                                                   HttpServletRequest request) {
+        String baseUrl = request.getScheme() + "://" + request.getServerName() +
+                (request.getServerPort() == 80 || request.getServerPort() == 443 ? "" : ":" + request.getServerPort());
+        AgcInfoDTO createdAgency = agcService.createAgency(requestDTO, baseUrl);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdAgency);
     }
 

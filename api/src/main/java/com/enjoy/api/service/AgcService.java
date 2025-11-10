@@ -36,7 +36,7 @@ public class AgcService {
 
 
     @Transactional
-    public AgcInfoDTO createAgency(AgcAddDTO requestDTO) {
+    public AgcInfoDTO createAgency(AgcAddDTO requestDTO, String baseUrl) {
         long newAgcId = cmnSeqService.getNextSequenceValue("AGC");
         Agc agc = Agc.builder()
                 .id(newAgcId)
@@ -74,13 +74,12 @@ public class AgcService {
 
             String subject = "[demo] 대리점 관리자 계정이 생성되었습니다.";
             String text = String.format(
-                    "안녕하세요, %s 대리점 관리자님.\n\n" +
-                            "demo 관리 시스템 계정이 생성되었습니다.\n\n" +
-                            "- 아이디: %s\n" +
-                            "- 임시 비밀번호: %s\n\n" +
-                            "로그인 후 반드시 비밀번호를 변경해 주시기 바랍니다.\n" +
+                    "아이디: %s\n" +
+                            "비밀번호: %s\n\n" +
+                            "아래 안내 사이트에 접속하셔서 로그인 하신 후 상담 서비스를 이용해주세요.\n" +
+                            "url: %s\n\n" +
                             "감사합니다.",
-                    requestDTO.getName(), loginId, password
+                    loginId, password, baseUrl
             );
             EmailSendEvtDTO event = new EmailSendEvtDTO(toEmail, subject, text);
             eventPublisher.publishEvent(event);
