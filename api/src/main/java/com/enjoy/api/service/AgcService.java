@@ -6,12 +6,14 @@ import com.enjoy.api.mapper.UsrMapper;
 import com.enjoy.api.service.usr.UsrService;
 import com.enjoy.common.domain.Agc;
 import com.enjoy.common.domain.AgcDtl;
+import com.enjoy.common.dto.EmailSendEvtDTO;
 import com.enjoy.common.dto.agc.*;
 import com.enjoy.common.dto.usr.UsrAddDTO;
 import com.enjoy.common.dto.usr.UsrInfoDTO;
 import com.enjoy.common.exception.BusinessException;
 import com.enjoy.common.exception.ErrorCodes;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -30,7 +32,7 @@ public class AgcService {
     private final AgcDtlMapper agcDtlMapper;
     private final UsrService usrService;
     private final CmnSeqService cmnSeqService;
-    private final EmailService emailService;
+    private final ApplicationEventPublisher eventPublisher;
 
 
     @Transactional
@@ -80,7 +82,8 @@ public class AgcService {
                             "감사합니다.",
                     requestDTO.getName(), loginId, password
             );
-            emailService.sendSimpleMessage(toEmail, subject, text);
+            EmailSendEvtDTO event = new EmailSendEvtDTO(toEmail, subject, text);
+            eventPublisher.publishEvent(event);
         }
 
         return this.findAgencyById(agc.getId());

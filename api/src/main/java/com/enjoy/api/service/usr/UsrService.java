@@ -190,5 +190,13 @@ public class UsrService {
         }
         this.updateUserPassword(userAccount.getId(), newPassword);
     }
+
+    @Transactional
+    public void bulkDeleteUsers(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        usrMapper.bulkUpdateStatus(ids, "DELETED");
+    }
 }
 

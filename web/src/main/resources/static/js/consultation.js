@@ -157,7 +157,7 @@ async function openDmModal() {
     const modalBody = document.createElement('div');
     modalBody.className = 'modal-body';
     const form = document.createElement('form');
-    form.className = 'modal-form';
+    form.className = 'modal-form modal-form-dm';
 
     const agencySearchInput = createElementSafe('input', {
         id: 'dmAgencySearchInput',
@@ -172,13 +172,8 @@ async function openDmModal() {
     const agencyCheckboxContainer = createElementSafe('div', {
         id: 'dmAgencyCheckboxContainer',
         className: 'checkbox-list-container',
-        attributes: {style: 'height: 150px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: 0.5rem;'}
+        attributes: {style: 'height: 150px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--border-radius); padding: 0.5rem;'}
     });
-
-
-
-
-
 
 
     const agencyCountDisplay = createElementSafe('div', {
@@ -194,7 +189,6 @@ async function openDmModal() {
         createFormGroup('dmAgencySearch', '대리점 검색', agencySearchInput),
         createFormGroup('dmAgencyCheckboxContainer', '받는 대리점 *', agencyCheckboxContainer, 'dmAgencyError'),
         agencyCountDisplay,
-
     );
     modalBody.appendChild(form);
 
@@ -205,11 +199,6 @@ async function openDmModal() {
     cancelBtn.className = 'btn btn-outline';
     cancelBtn.textContent = '취소';
     cancelBtn.addEventListener('click', () => modalOverlay.remove());
-
-
-
-
-
 
 
     const submitBtn = document.createElement('button');
@@ -247,8 +236,6 @@ async function openDmModal() {
         modalOverlay.remove();
 
 
-
-
         ConsultationState.currentConsultation = tempChannel;
         renderChatHeader(tempChannel);
         renderMessages(tempChannel.messages || [], 0);
@@ -261,7 +248,7 @@ async function openDmModal() {
         if (window.innerWidth <= 768) {
             document.getElementById('chatLayout').classList.add('chat-active');
         }
-        const newState = { consultationId: 'new' };
+        const newState = {consultationId: 'new'};
         history.pushState(newState, '', '#chat=new');
     });
 
@@ -317,34 +304,11 @@ async function openDmModal() {
     });
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     try {
         const agencies = await apiClient.get('/admin/agencies/search');
         console.log("Fetched agencies data:", agencies);
         allAgencies = agencies;
         renderAgencyCheckboxes(allAgencies);
-
-
-
-
-
 
 
     } catch (error) {
@@ -574,46 +538,72 @@ function renderConsultationList() {
                 }
             }
 
-            const avatar = createElementSafe('div', {
-                className: 'chat-item-avatar',
-                text: avatarText
-            });
+            let line1Left, line2Text;
 
+            const isClosedTab = ConsultationState.statusFilter === 'CLOSED';
+
+            if (consultation.type === 'DM') {
+                const categoryName = getCodeName('CHN_CATEGORY', consultation.category);
+                if (isClosedTab && consultation.category) {
+                    line1Left = createElementSafe('h3', {
+                        className: 'chat-item-title',
+                        children: [
+                            createElementSafe('span', { text: consultation.title }),
+                            createElementSafe('span', {
+                                text: ` · ${categoryName}`,
+                                attributes: { style: 'color: var(--muted-foreground); font-weight: 400;' }
+                            })
+                        ]
+                    });
+                } else {
+                    line1Left = createElementSafe('h3', {className: 'chat-item-title', text: consultation.title});
+                }
+                line2Text = createElementSafe('p', {className: 'chat-item-preview', text: previewText});
+
+            } else {
+                line1Left = createElementSafe('h3', {
+                    className: 'chat-item-title',
+                    children: [
+                        createElementSafe('span', { text: previewText }),
+                        createElementSafe('span', {
+                            text: ` · ${categoryName}`,
+                            attributes: { style: 'color: var(--muted-foreground); font-weight: 400;' }
+                        })
+                    ]
+                });
+                line2Text = createElementSafe('p', {
+                    className: 'chat-item-preview',
+                    children: [
+                        createElementSafe('span', {
+                            text: '제목: ',
+                            attributes: { style: 'color: var(--muted-foreground);' }
+                        }),
+                        createElementSafe('span', { text: consultation.title })
+                    ]
+                });
+            }
             const content = createElementSafe('div', {
                 className: 'chat-item-content',
                 children: [
-                    createElementSafe('div', {
+                    createElementSafe('div', { // Header (Line 1)
                         className: 'chat-item-header',
                         children: [
-                            createElementSafe('h3', {className: 'chat-item-title', text: consultation.title}),
-                            createElementSafe('span', { className: 'chat-item-time', text: timeText })
+                            line1Left,
+                            createElementSafe('span', {className: 'chat-item-time', text: timeText})
                         ]
                     }),
-                    createElementSafe('div', {
-                        attributes: {style: 'display: flex; gap: 0.5rem; margin-bottom: 0.25rem; align-items: center;'},
-                        children: [
-                            createElementSafe('span', {className: `badge ${statusClass}`, text: statusName}),
-                            consultation.type !== 'DM' ? createElementSafe('span', {
-                                style: 'font-size: 0.75rem; color: var(--muted-foreground);',
-                                text: categoryName
-                            }) : null
-                        ]
-                    }),
-
-                    createElementSafe('p', {className: 'chat-item-preview', text: previewText}),
+                    line2Text
                 ]
             });
 
             let unreadBadge = null;
-            if (consultation.unreadCount > 0) {
+            if (consultation.unreadCount > 0 && consultation.status !== 'CLOSED') {
                 unreadBadge = createElementSafe('span', {
                     className: 'badge badge-danger',
                     attributes: {style: 'position: absolute; bottom: 0.75rem; right: 1rem; min-width: 1.25rem; height: 1.25rem; padding: 0 0.25rem; border-radius: 9999px; font-size: 0.625rem; display: flex; align-items: center; justify-content: center;'},
                     text: consultation.unreadCount
                 });
             }
-
-            item.appendChild(avatar);
             item.appendChild(content);
             if (unreadBadge) {
                 item.appendChild(unreadBadge);
@@ -953,13 +943,8 @@ function renderChatHeader(consultation) {
 
     titleEl.textContent = headerTitle;
 
-    const creatorName = (consultation.creator && consultation.creator.name) ? consultation.creator.name : "고객";
-    let subtitleText = creatorName;
-    if (consultation.type === 'CON') {
-        const categoryName = getCodeName('CHN_CATEGORY', consultation.category);
-        subtitleText += ` · ${categoryName}`;
-    }
-    previewEl.textContent = subtitleText;
+    subtitleEl.textContent = '';
+    previewEl.textContent = '';
 }
 
 function renderMessages(messages, unreadCountToScroll = 0) {
@@ -991,69 +976,82 @@ function renderMessages(messages, unreadCountToScroll = 0) {
 
     if (currentConsultation && currentConsultation.type === 'CON' && messages.length > 0) {
         const firstMessage = messages[0];
-        const nameInitial = (firstMessage.sender && firstMessage.sender.name) ? firstMessage.sender.name.charAt(0) : '고';
-        const name = (firstMessage.sender && firstMessage.sender.name) ? firstMessage.sender.name : '고객';
+
+        const timeText = formatTimestampSmart(firstMessage.regDt);
+        const categoryName = getCodeName('CHN_CATEGORY', currentConsultation.category);
+        const title = currentConsultation.title;
+        const content = firstMessage.content;
+
+        const chevronIcon = Icon({type: 'chevronUp', className: 'chevron-icon', size: 16});
+        const isMobile = window.innerWidth <= 767;
+        if (isMobile) {
+            chevronIcon.style.transform = 'rotate(180deg)';
+        }
 
         const toggleBtn = createElementSafe('button', {
             className: 'notice-card-toggle',
             attributes: {'aria-label': '접기/펼치기'},
-            children: [
-                Icon({type: 'chevronUp', className: 'chevron-icon', size: 16})
-            ]
+            children: [ chevronIcon ]
         });
         toggleBtn.onclick = toggleNoticeCard;
 
+
+        const participants = currentConsultation.participants;
+        let agencyName = "참여 대리점 없음";
+        if (participants && participants.length > 0) {
+            agencyName = participants[0].name;
+            if (participants.length > 1) {
+                agencyName += ` 외 ${participants.length - 1}개`;
+            }
+        }
+        const noticeHeader = createElementSafe('div', {
+            className: 'notice-card-header',
+            children: [
+                createElementSafe('h4', {
+                    className: 'notice-card-title',
+                    text: agencyName,
+                    attributes: { style: 'font-size: 0.875rem;' }
+                }),
+                createElementSafe('span', {className: 'notice-card-time', text: timeText}),
+                toggleBtn
+            ]
+        });
+        const createNoticeRow = (label, valueElement) => {
+            return createElementSafe('div', {
+                className: 'notice-card-row',
+                children: [
+                    createElementSafe('span', {className: 'notice-card-label', text: label}),
+                    valueElement
+                ]
+            });
+        };
+
+        const noticeContent = createElementSafe('div', {
+            className: 'notice-card-content',
+            id: 'noticeCardContent',
+            attributes: isMobile ? {style: 'display: none;'} : {},
+            children: [
+                createNoticeRow('카테고리:', createElementSafe('span', {
+                    className: 'badge badge-info',
+                    text: categoryName
+                })),
+                createNoticeRow('제목:', createElementSafe('span', {text: title})),
+                createNoticeRow('본문:', createElementSafe('span', {
+                    text: content,
+                    attributes: {style: 'white-space: pre-wrap;'}
+                }))
+            ]
+        });
         const noticeCard = createElementSafe('div', {
-            className: 'consultation-notice-card collapsed',
+            className: `consultation-notice-card ${isMobile ? 'collapsed' : ''}`,
             id: 'consultationNoticeCard',
             children: [
-                createElementSafe('div', {
-                    className: 'notice-card-header',
-                    children: [
-                        createElementSafe('h4', {
-                            className: 'notice-card-title',
-                            text: currentConsultation.title
-                        }),
-                        toggleBtn
-                    ]
-                }),
-                createElementSafe('div', {
-                    className: 'notice-card-content',
-                    id: 'noticeCardContent',
-                    children: [
-                        createElementSafe('div', {
-                            className: 'message received',
-                            attributes: {style: 'margin: 0;'},
-                            children: [
-                                createElementSafe('div', {className: 'message-avatar', text: nameInitial}),
-                                createElementSafe('div', {
-                                    className: 'message-content',
-                                    children: [
-                                        createElementSafe('div', {
-                                            attributes: {style: 'font-size: 0.75rem; color: var(--muted-foreground); margin-bottom: 0.25rem;'},
-                                            text: name
-                                        }),
-
-                                        firstMessage.content ? createElementSafe('div', {
-                                            className: 'message-bubble',
-                                            text: firstMessage.content
-                                        }) : null,
-
-                                        createElementSafe('div', {
-                                            className: 'message-time',
-                                            text: formatTimestampSmart(firstMessage.regDt)
-                                        })
-                                    ]
-                                })
-                            ]
-                        })
-                    ]
-                })
+                noticeHeader,
+                noticeContent
             ]
         });
 
         messagesContainer.appendChild(noticeCard);
-
     }
 
     for (let i = 0; i < messages.length; i++) {
@@ -1061,7 +1059,6 @@ function renderMessages(messages, unreadCountToScroll = 0) {
         const isSent = message.sender && String(message.sender.id) === String(AppState.currentUser.id);
 
         let fileElements = [];
-
 
 
         if (message.files && message.files.length > 0) {
@@ -1086,7 +1083,7 @@ function renderMessages(messages, unreadCountToScroll = 0) {
 
                     const fileIcon = createElementSafe('div', {
                         className: 'file-icon',
-                        children: [Icon({ type: 'file', size: 24 })]
+                        children: [Icon({type: 'file', size: 24})]
                     });
 
 
@@ -1097,7 +1094,7 @@ function renderMessages(messages, unreadCountToScroll = 0) {
                             download: file.name,
                             title: '다운로드'
                         },
-                        children: [Icon({ type: 'download', size: 20 })]
+                        children: [Icon({type: 'download', size: 20})]
                     });
 
 
@@ -1108,8 +1105,8 @@ function renderMessages(messages, unreadCountToScroll = 0) {
                             createElementSafe('div', {
                                 className: 'file-info',
                                 children: [
-                                    createElementSafe('span', { className: 'file-name', text: file.name }),
-                                    createElementSafe('span', { className: 'file-size', text: formatFileSize(file.size) })
+                                    createElementSafe('span', {className: 'file-name', text: file.name}),
+                                    createElementSafe('span', {className: 'file-size', text: formatFileSize(file.size)})
                                 ]
                             }),
                             downloadLink
@@ -1326,7 +1323,11 @@ function onGlobalUpdate(updateData) {
 
         const timeA = getTimestamp(a);
         const timeB = getTimestamp(b);
-        return timeB - timeA;
+        if (timeB !== timeA) {
+            return timeB - timeA;
+        }
+        // return timeB - timeA;
+        return b.id - a.id;
     })
     renderConsultationList();
 }
@@ -1379,9 +1380,12 @@ async function openConsultationModal() {
         className: 'form-select'
     });
 
-    const categories = ["영업문의", "장애/기술지원", "청구/정산", "기타"];
-    categories.forEach(cat => {
-        categorySelect.appendChild(createElementSafe('option', {text: cat, attributes: {value: cat}}));
+    const categories = AppState.commonCodes['CHN_CATEGORY'] || [];
+    categories.forEach(category => {
+        categorySelect.appendChild(createElementSafe('option', {
+            text: category.name,
+            attributes: {value: category.code}
+        }));
     });
 
 
@@ -1508,8 +1512,6 @@ function performChatSearch() {
     updateSearchUI();
 
 
-
-
 }
 
 function navigateChatSearch(direction) {
@@ -1555,13 +1557,19 @@ function createAttachmentPreview(file, tempId) {
     const fileSizeFormatted = formatFileSize(file.size);
 
     const previewContent = isImage
-        ? [createElementSafe('img', { attributes: { src: URL.createObjectURL(file), alt: file.name, style: 'width: 40px; height: 40px; object-fit: cover;' } })]
-        : [Icon({ type: 'file', size: 24 })];
+        ? [createElementSafe('img', {
+            attributes: {
+                src: URL.createObjectURL(file),
+                alt: file.name,
+                style: 'width: 40px; height: 40px; object-fit: cover;'
+            }
+        })]
+        : [Icon({type: 'file', size: 24})];
 
     const removeBtn = createElementSafe('button', {
         className: 'remove-file-btn',
-        attributes: { type: 'button', title: '제거' },
-        children: [Icon({ type: 'close', size: 16 })]
+        attributes: {type: 'button', title: '제거'},
+        children: [Icon({type: 'close', size: 16})]
 
     });
 
@@ -1573,8 +1581,8 @@ function createAttachmentPreview(file, tempId) {
             createElementSafe('div', {
                 className: 'attachment-info',
                 children: [
-                    createElementSafe('span', { className: 'attachment-name', text: file.name }),
-                    createElementSafe('span', { className: 'attachment-size', text: fileSizeFormatted })
+                    createElementSafe('span', {className: 'attachment-name', text: file.name}),
+                    createElementSafe('span', {className: 'attachment-size', text: fileSizeFormatted})
                 ]
             }),
             removeBtn
@@ -1651,7 +1659,6 @@ async function submitComplete(selectedCategory) {
 }
 
 function openCompleteModal() {
-    // 이전 모달이 있다면 제거
     const existingModal = document.getElementById('completeModal');
     if (existingModal) existingModal.remove();
     const categories = AppState.commonCodes['CHN_CATEGORY'] || [];
@@ -1662,24 +1669,24 @@ function openCompleteModal() {
     });
     const modalContent = createElementSafe('div', {
         className: 'modal-content',
-        attributes: { style: 'max-width: 25rem;' } // 모달 너비 조절
+        attributes: {style: 'max-width: 25rem;'} // 모달 너비 조절
     });
     const closeBtn = createElementSafe('button', {
         className: 'modal-close',
-        children: [Icon({ type: 'close', size: 20 })]
+        children: [Icon({type: 'close', size: 20})]
     });
     closeBtn.addEventListener('click', () => modalOverlay.remove());
 
     const modalHeader = createElementSafe('div', {
         className: 'modal-header',
         children: [
-            createElementSafe('h2', { className: 'modal-title', text: '상담 카테고리 선택' }),
+            createElementSafe('h2', {className: 'modal-title', text: '상담 카테고리 선택'}),
             closeBtn
         ]
     });
     const modalBody = createElementSafe('div', {
         className: 'modal-body',
-        attributes: { style: 'display: flex; flex-direction: column; gap: 1rem;' }
+        attributes: {style: 'display: flex; flex-direction: column; gap: 1rem;'}
     });
     categories.forEach((category, index) => {
         const radioId = `category-radio-${category.code}`;
@@ -1696,10 +1703,10 @@ function openCompleteModal() {
         if (index === 0) radioInput.checked = true;
         const customRadio = createElementSafe('span', {
             className: 'custom-radio-ui',
-            attributes: { style: 'width: 20px; height: 20px; border: 2px solid var(--border); border-radius: 50%; display: inline-block; position: relative; margin-right: 0.75rem; flex-shrink: 0;' }
+            attributes: {style: 'width: 20px; height: 20px; border: 2px solid var(--border); border-radius: 50%; display: inline-block; position: relative; margin-right: 0.75rem; flex-shrink: 0;'}
         });
         const customRadioInner = createElementSafe('span', {
-            attributes: { style: 'width: 12px; height: 12px; background-color: var(--primary); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none;' }
+            attributes: {style: 'width: 12px; height: 12px; background-color: var(--primary); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none;'}
         });
         customRadio.appendChild(customRadioInner);
         const label = createElementSafe('label', {
@@ -1711,7 +1718,7 @@ function openCompleteModal() {
             children: [
                 radioInput,
                 customRadio,
-                createElementSafe('span', { text: category.name })
+                createElementSafe('span', {text: category.name})
             ]
         });
         radioInput.addEventListener('change', () => {
@@ -1725,7 +1732,7 @@ function openCompleteModal() {
 
     const modalFooter = createElementSafe('div', {
         className: 'modal-footer',
-        attributes: { style: 'padding-top: 0;' }
+        attributes: {style: 'padding-top: 0;'}
     });
 
     const submitBtn = createElementSafe('button', {
@@ -1740,8 +1747,6 @@ function openCompleteModal() {
     });
 
     modalFooter.appendChild(submitBtn);
-
-    // --- 모달 조립 및 표시 ---
     modalContent.append(modalHeader, modalBody, modalFooter);
     modalOverlay.appendChild(modalContent);
     document.body.appendChild(modalOverlay);
@@ -1786,17 +1791,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
     const currentUserRole = AppState.currentUser.role;
-    const openModalBtn = document.getElementById('openModalBtn');
-    const openDmModalBtn = document.getElementById('openDmModalBtn');
-
-    if (currentUserRole === 'SUPER_ADMIN' || currentUserRole === 'OPERATOR') {
-        openModalBtn.style.display = 'none';
-        openDmModalBtn.style.display = 'flex';
-        openDmModalBtn.addEventListener('click', openDmModal);
-    } else {
-        openModalBtn.addEventListener('click', openConsultationModal);
+    const createNewChatBtn = document.getElementById('createNewChatBtn');
+    if (createNewChatBtn) {
+        const btnIcon = Icon({type: 'send', size: 16});
+        if (btnIcon) createNewChatBtn.prepend(btnIcon);
+        if (currentUserRole === 'SUPER_ADMIN' || currentUserRole === 'OPERATOR') {
+            createNewChatBtn.addEventListener('click', openDmModal);
+        } else {
+            createNewChatBtn.addEventListener('click', openConsultationModal);
+        }
     }
-
 
     const sendBtn = document.getElementById('sendMessageBtn');
     const textInput = document.getElementById('messageInput');
@@ -1806,7 +1810,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (textInput) {
         textInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
                 e.preventDefault();
                 sendChatMessage();
             }
@@ -1814,8 +1818,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const backBtn = document.getElementById('backToListBtn');
-
-
 
 
     if (backBtn) {
@@ -1878,11 +1880,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (chatSearchInput) {
 
 
-
-
-
-
-
         chatSearchInput.addEventListener('input', (e) => {
             performChatSearch();
         });
@@ -1899,14 +1896,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         searchPrevBtn.addEventListener('click', () => {
 
 
-
             navigateChatSearch('prev');
         });
     }
     const searchNextBtn = document.getElementById('searchNextBtn');
     if (searchNextBtn) {
         searchNextBtn.addEventListener('click', () => {
-
 
 
             navigateChatSearch('next');
@@ -1957,7 +1952,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     });
 
                     const removeBtn = previewElement.querySelector('.remove-file-btn');
-                    if(removeBtn) {
+                    if (removeBtn) {
                         removeBtn.onclick = () => removeAttachedFile(uploadedFileId, previewElement);
                     }
 
@@ -1978,5 +1973,4 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // await refreshConsultationList();
 });

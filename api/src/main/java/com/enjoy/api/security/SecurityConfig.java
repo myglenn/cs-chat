@@ -42,6 +42,9 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(customAuthenticationEntryPoint))
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/", "/login", "/api/auth/**", "/js/**", "/css/**", "/images/**", "/ws-stomp/**").permitAll()
+                        .requestMatchers("/user").hasRole("SUPER_ADMIN")
+                        .requestMatchers("/agency").hasAnyRole("SUPER_ADMIN", "OPERATOR")
+                        .requestMatchers("/consultation").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, logoutService), UsernamePasswordAuthenticationFilter.class);

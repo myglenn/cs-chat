@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -67,6 +68,12 @@ public class UsrAdmController {
         usrService.updateUserPassword(userId, newPassword);
 
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/bulk-delete")
+    public ResponseEntity<Void> bulkDeleteUsers(@RequestBody List<Long> ids) {
+        usrService.bulkDeleteUsers(ids);
+        return ResponseEntity.noContent().build();
     }
 
 }

@@ -19,7 +19,9 @@ async function handleLogin(event) {
             body: JSON.stringify({ loginId, password })
         });
 
-        if (!response.ok) { throw new Error('Login failed'); }
+        if (!response.ok) {
+            throw new Error('Login failed');
+        }
 
         const tokenData = await response.json();
 
