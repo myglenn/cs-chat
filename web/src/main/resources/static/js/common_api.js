@@ -117,8 +117,6 @@ class ApiClient {
                     options.headers['Authorization'] = `Bearer ${newAccessToken}`;
                     response = await fetch(url, options);
                 } else {
-                    this.clearToken();
-                    window.location.href = '/login';
                     throw new Error('Unauthorized after token refresh failed');
                 }
             }

@@ -3,6 +3,7 @@ package com.enjoy.api.service;
 import com.enjoy.api.mapper.CmnSeqMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,7 +13,8 @@ public class CmnSeqService {
     private final CmnSeqMapper cmnSeqMapper;
 
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW,
+            isolation = Isolation.READ_COMMITTED)
     public long getNextSequenceValue(String seqName) {
 
         int updatedRows = cmnSeqMapper.incrementValueByName(seqName);

@@ -6,17 +6,20 @@
     <sql id="agcSearchFromWhere">
         FROM AGC A
         LEFT JOIN AGC_DTL D ON A.ID = D.AGC_ID
+        LEFT JOIN USR U ON A.ID = U.AGC_ID AND U.ROLE = 'AGENCY_ADMIN'
+
         <where>
             AND A.STATUS = 'ACTIVE'
-            <if test="condition.code != null and condition.code != ''">
-                AND A.CODE LIKE CONCAT('%', #{condition.code}, '%')
-            </if>
 
             <if test="condition.name != null and condition.name != ''">
                 AND (
                 A.NAME LIKE CONCAT('%', #{condition.name}, '%')
-                OR D.BIZ_NUM LIKE CONCAT('%', #{condition.name}, '%')
+                OR U.LOGIN_ID LIKE CONCAT('%', #{condition.name}, '%')
                 )
+            </if>
+
+            <if test="condition.code != null and condition.code != ''">
+                AND A.CODE LIKE CONCAT('%', #{condition.code}, '%')
             </if>
         </where>
     </sql>
@@ -47,7 +50,7 @@
     </select>
 
     <select id="findWithPagingAndFilter" resultType="com.enjoy.common.dto.agc.AgcInfoDTO">
-        SELECT
+        SELECT DISTINCT
         A.ID, A.CODE, A.NAME, A.REG_DT,
         D.BIZ_NUM, D.ZIP_CODE, D.BASE_ADDR, D.DTL_ADDR, D.EMAIL, D.TEL, D.CEO, A.STATUS
         <include refid="agcSearchFromWhere"/>
@@ -66,7 +69,7 @@
     </update>
 
     <select id="countWithFilter" resultType="long">
-        SELECT COUNT(A.ID) <include refid="agcSearchFromWhere"/>
+        SELECT COUNT(DISTINCT A.ID) <include refid="agcSearchFromWhere"/>
     </select>
 
     <select id="findAllNoPaging" parameterType="com.enjoy.common.dto.agc.AgcSearchCondition" resultType="com.enjoy.common.dto.agc.AgcInfoDTO">
@@ -78,6 +81,7 @@
         A.REG_DT
         FROM AGC A
         <where>
+            AND A.STATUS = 'ACTIVE'
             <if test="name != null and name != ''">
                 AND A.NAME LIKE CONCAT('%', #{name}, '%')
             </if>

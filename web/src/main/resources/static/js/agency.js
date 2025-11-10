@@ -406,8 +406,8 @@ function openAgencyModal() {
     form.appendChild(addressGroup);
 
     form.append(
-        createFormGroup({id: 'baseAddr', value: formData.address, placeholder: '기본주소', readonly: true}),
-        createFormGroup({id: 'dtlAddr', value: formData.detailAddress, placeholder: '상세주소'})
+        createFormGroup({id: 'baseAddr', value: formData.baseAddr, placeholder: '기본주소', readonly: true}),
+        createFormGroup({id: 'dtlAddr', value: formData.dtlAddr, placeholder: '상세주소'})
     );
 
     const managerInfoTitle = document.createElement('h3');
@@ -650,7 +650,7 @@ function bulkDeleteAgencies() {
 function changeItemsPerPage(value) {
     AgencyState.itemsPerPage = parseInt(value);
     AgencyState.currentPage = 1;
-    renderAgencies();
+    refreshAgencyList();
 }
 
 
@@ -689,7 +689,6 @@ async function checkLoginId() {
             errorEl.textContent = '사용 가능한 아이디입니다';
             errorEl.style.color = 'var(--success)';
             Toast.success('사용 가능한 아이디입니다');
-            // 2초 뒤에 피드백 메시지 초기화
             setTimeout(() => {
                 errorEl.style.color = '';
                 errorEl.textContent = '';

@@ -1203,13 +1203,6 @@ input[type="checkbox"]:checked
     display: block;
 }
 
-.consultation-notice-card.collapsed .notice-card-content {
-    display: none;
-}
-
-.consultation-notice-card.collapsed .notice-card-header {
-    margin-bottom: 0;
-}
 
 /* consultation.css 파일에 추가 */
 .selected-items-container {
@@ -1241,23 +1234,25 @@ input[type="checkbox"]:checked
 }
 
 .checkbox-list-container .checkbox-label {
-    display: block; /* 각 체크박스가 새 줄에 표시되도록 함 */
-    margin-bottom: 0.5rem; /* 체크박스 사이에 약간의 간격 추가 */
-    cursor: pointer;
-    display: flex; /* 체크박스와 텍스트를 보기 좋게 정렬 */
-    align-items: center;
+    display: block;
+    padding: 0.75rem 0.5rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: 0.25rem;
 }
 
-/* 선택 사항: 커스텀 체크박스 모양 스타일링 */
+.checkbox-list-container .checkbox-label:hover {
+    background-color: var(--accent);
+}
+
 .checkbox-list-container .checkbox-custom {
     display: inline-block;
     width: 16px;
     height: 16px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
     margin-right: 0.5rem;
     position: relative;
-    background-color: var(--input-bg);
+    background-color: var(--input-background);
 }
 
 .checkbox-list-container input[type="checkbox"] {
@@ -1271,5 +1266,90 @@ input[type="checkbox"]:checked
     left: 50%;
     transform: translate(-50%, -50%);
     font-size: 12px;
-    color: var(--primary-color);
+    color: var(--primary);
+}
+
+
+.consultation-notice-card {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    margin: 0;
+    padding: 1rem;
+    background-color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(8px);
+}
+
+.dark .consultation-notice-card {
+    background-color: rgba(var(--muted-rgb, 37, 38, 43), 0.95);
+}
+
+.notice-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.consultation-notice-card.collapsed .notice-card-header {
+    margin-bottom: 0;
+}
+
+.notice-card-title {
+    font-weight: var(--font-weight-medium);
+    margin: 0;
+    font-size: 1rem;
+    flex: 1;
+}
+
+.notice-card-time {
+    font-size: 0.875rem;
+    color: var(--muted-foreground);
+    flex-shrink: 0;
+}
+
+.notice-card-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    align-items: center;
+}
+
+.notice-card-label {
+    color: var(--muted-foreground);
+    font-weight: var(--font-weight-medium);
+    flex-shrink: 0;
+}
+
+
+.notice-card-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    background: none;
+    border: none;
+    color: var(--muted-foreground);
+    cursor: pointer;
+    border-radius: 0.25rem;
+    flex-shrink: 0;
+}
+
+.badge-info {
+    background-color: #eff6ff;
+    color: #2563eb;
+}
+
+.dark .badge-info {
+    background-color: #1e3a8a;
+    color: #93c5fd;
+}
+
+.modal-form-dm {
+    gap: 0 !important;
 }

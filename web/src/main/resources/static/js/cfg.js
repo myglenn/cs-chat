@@ -45,6 +45,12 @@ const ICONS = {
             {tag: 'polyline', points: "7 10 12 15 17 10"},
             {tag: 'line', x1: "12", y1: "15", x2: "12", y2: "3"}
         ]
+    },
+    send: {
+        paths: [
+            {d: "m22 2-7 20-4-9-9-4Z"},
+            {d: "M22 2 11 13"}
+        ]
     }
 };
 ICONS.confirm = ICONS.warning;

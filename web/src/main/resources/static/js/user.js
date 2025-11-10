@@ -362,7 +362,7 @@ function openUserModal() {
 
     if (UserState.isEditMode) {
         userIdInput.readOnly = true;
-        form.appendChild(createFormGroup('userId', '사원 아이디 *', userIdInput, 'userIdError'));
+        form.appendChild(createFormGroup('userId', '사원 아이디(이메일) *', userIdInput, 'userIdError'));
     } else {
         const checkIdBtn = document.createElement('button');
         checkIdBtn.type = 'button';
@@ -374,7 +374,7 @@ function openUserModal() {
         userIdWrapper.className = 'form-group-with-button';
         userIdWrapper.append(userIdInput, checkIdBtn);
 
-        form.appendChild(createFormGroup('userId', '사원 아이디 *', userIdWrapper, 'userIdError'));
+        form.appendChild(createFormGroup('userId', '사원 아이디(이메일) *', userIdWrapper, 'userIdError'));
     }
 
     
@@ -588,15 +588,17 @@ function bulkDeleteUsers() {
     }
 
     CustomAlert.confirm(
-        `${UserState.selectedUsers.length}개 항목 삭제`,
-        `선택한 ${UserState.selectedUsers.length}명의 사원를 삭제하시겠습니까?`,
-        () => {
-            UserState.users = UserState.users.filter(u => !UserState.selectedUsers.includes(u.id));
-            UserState.filteredUsers = UserState.filteredUsers.filter(u => !UserState.selectedUsers.includes(u.id));
-
-            Toast.success(`${UserState.selectedUsers.length}명의 사원이 삭제되었습니다`);
-            UserState.selectedUsers = [];
-            renderUsers();
+        `${selectedIds.length}개 항목 삭제`,
+        `선택한 ${selectedIds.length}명의 사원을 삭제하시겠습니까?`,
+        async () => { // <-- async 키워드 추가
+            try {
+                await apiClient.post('/admin/users/bulk-delete', selectedIds);
+                Toast.success(`${selectedIds.length}명의 사원이 삭제되었습니다`);
+                UserState.selectedUsers = [];
+                await refreshUserList();
+            } catch (error) {
+                Toast.error("일괄 삭제 중 오류가 발생했습니다.");
+            }
         }
     );
 }
@@ -604,7 +606,8 @@ function bulkDeleteUsers() {
 function changeItemsPerPage(value) {
     UserState.itemsPerPage = parseInt(value);
     UserState.currentPage = 1;
-    renderUsers();
+    // renderUsers();
+    refreshUserList();
 }
 
 

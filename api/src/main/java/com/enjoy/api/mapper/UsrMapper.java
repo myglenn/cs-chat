@@ -40,6 +40,10 @@ public interface UsrMapper {
     Optional<UsrInfoDTO> findFirstManagerByAgcId(Long agcId);
 
     List<String> findLoginIdsByAgcIds(List<Long> agcIds);
+
     String findLoginIdById(Long id);
+
     List<String> findLoginIdsByRoles(List<String> roles);
+
+    int bulkUpdateStatus(@Param("ids") List<Long> ids, @Param("status") String status);
 }

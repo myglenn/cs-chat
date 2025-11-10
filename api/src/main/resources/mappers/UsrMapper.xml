@@ -12,6 +12,7 @@
                  JOIN
              USR_PW UP ON U.ID = UP.USR_ID
         WHERE U.LOGIN_ID = #{loginId}
+          AND U.STATUS = 'ACTIVE'
     </select>
 
     <select id="findById" parameterType="long" resultType="com.enjoy.common.domain.Usr">
@@ -101,12 +102,6 @@
             <if test="name != null and name != ''">
                 NAME = #{name},
             </if>
-            <if test="email != null and email != ''">
-                EMAIL = #{email},
-            </if>
-            <if test="role != null and role != ''">
-                ROLE = #{role},
-            </if>
         </set>
         WHERE
         ID = #{id}
@@ -115,9 +110,7 @@
     <update id="updateStatusAndClearInfo" parameterType="com.enjoy.common.domain.Usr">
         UPDATE USR
         SET STATUS = #{status},
-            NAME   = #{name},
-            EMAIL  = #{email},
-            PW     = #{pw}
+            NAME   = #{name}
         WHERE ID = #{id}
     </update>
 
@@ -176,5 +169,15 @@
             #{role}
         </foreach>
     </select>
+
+    <update id="bulkUpdateStatus">
+        UPDATE USR
+        SET
+        STATUS = #{status}
+        WHERE id IN
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
 
 </mapper>
