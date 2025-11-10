@@ -13,8 +13,12 @@ spring:
       mail:
         smtp:
           auth: true
-          starttls:
+          ssl:
             enable: true
+            trust: ${MAIL_HOST}
+#          starttls:
+#            enable: true gmail 이라면 이거 씀
+
 
 file:
   upload-dir: /path/to/your/local/upload

@@ -632,7 +632,7 @@ function createProfileForm(user) {
 
     form.append(
         createFormGroup('profileName', '이름', nameInput, 'profileNameError'),
-        createFormGroup('profileEmail', '이메일', emailInput, 'profileEmailError')
+        createFormGroup('profileEmail', '아이디', emailInput, 'profileEmailError')
     );
 
 
