@@ -157,7 +157,7 @@ class ApiClient {
             const socket = new SockJS("/ws-stomp");
             this.stompClient = Stomp.over(socket);
 
-            this.stompClient.debug = null;
+            // this.stompClient.debug = null;
 
             const headers = {};
             if (this.accessToken) {

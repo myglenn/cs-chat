@@ -9,6 +9,7 @@ import com.enjoy.common.domain.Msg;
 import com.enjoy.common.domain.MsgFileMap;
 import com.enjoy.common.domain.Usr;
 import com.enjoy.common.dto.FileInfoDTO;
+import com.enjoy.common.dto.chn.MsgBroadcastEvtDTO;
 import com.enjoy.common.dto.msg.MsgInfoDTO;
 import com.enjoy.common.dto.msg.MsgSendDTO;
 import com.enjoy.common.dto.usr.UsrInfoDTO;
@@ -17,6 +18,7 @@ import com.enjoy.common.exception.ErrorCodes;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.Resource;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.stereotype.Service;
@@ -43,7 +45,7 @@ public class MsgService {
     private final CmnFileService cmnFileService;
     private final ChnService chnService;
     private final CmnSeqService cmnSeqService;
-    private final SimpMessageSendingOperations messagingTemplate;
+    private final ApplicationEventPublisher eventPublisher;
 
     public List<MsgInfoDTO> findMessagesByChannelId(Long chnId) {
         List<Msg> msgList = msgMapper.findByChnId(chnId);
@@ -92,9 +94,11 @@ public class MsgService {
 
         MsgInfoDTO msgInfo = convertToInfoDTO(msg);
         List<String> participantLoginIds = chnService.findParticipantLoginIdsByChnId(chnId);
-        participantLoginIds.forEach(id -> {
-            messagingTemplate.convertAndSend("/topic/user/" + id, msgInfo);
-        });
+
+        eventPublisher.publishEvent(new MsgBroadcastEvtDTO(msgInfo, participantLoginIds));
+
+
+
         chnUsrReadStatusMapper.upsertReadStatus(msg.getChnId(), msg.getSenderId(), msg.getId());
         return MsgInfoDTO.builder()
                 .id(msg.getId())

@@ -3,6 +3,7 @@ package com.enjoy.api.config;
 import com.enjoy.common.dto.ErrorResponseDTO;
 import com.enjoy.common.exception.BusinessException;
 import com.enjoy.common.exception.ErrorCodes;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -13,9 +14,17 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import java.util.TimeZone;
+
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @PostConstruct
+    public void setTimeZone() {
+        TimeZone.setDefault(TimeZone.getTimeZone("Asia/Seoul"));
+    }
+
     @ExceptionHandler(UsernameNotFoundException.class)
     public ResponseEntity<ErrorResponseDTO> handleUserNotFoundException(UsernameNotFoundException ex) {
         ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()

@@ -1459,9 +1459,23 @@ function onGlobalUpdate(updateData) {
     }
 
     if (!previewItem) {
+        if (!isNewChannel) {
+            const isMyMessage = updateData.sender && String(updateData.sender.id) === String(AppState.currentUser.id);
+
+            if (!isMyMessage) {
+                document.querySelectorAll('.filter-chip').forEach(chip => {
+                    if (!chip.classList.contains('active')) {
+                        if (!chip.querySelector('.new-message-dot')) {
+                            const dot = document.createElement('span');
+                            dot.className = 'new-message-dot';
+                            chip.appendChild(dot);
+                        }
+                    }
+                });
+            }
+        }
         return;
     }
-
 
     if (isNewChannel) {
         Object.assign(previewItem, newChannelData);
@@ -1514,6 +1528,11 @@ function onGlobalUpdate(updateData) {
         return b.id - a.id;
     })
     renderConsultationList();
+    const activeChip = document.querySelector('.filter-chip.active');
+    if (activeChip) {
+        const dot = activeChip.querySelector('.new-message-dot');
+        if (dot) dot.remove();
+    }
 }
 
 
@@ -2005,12 +2024,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     await window.authReady;
     await window.codesReady;
 
-
-    const allCategoryCodes = (AppState.commonCodes['CHN_CATEGORY'] || []).map(c => c.code);
-    ConsultationState.categoryFilter = [...allCategoryCodes];
-    ConsultationState.tempCategoryFilter = [...allCategoryCodes];
-    updateCategoryFilterLabel();
-
     try {
         await apiClient.connectWebSocket();
         apiClient.subscribe(
@@ -2021,6 +2034,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
         console.error("WebSocket 연결 실패:", error);
     }
+
+
+    const allCategoryCodes = (AppState.commonCodes['CHN_CATEGORY'] || []).map(c => c.code);
+    ConsultationState.categoryFilter = [...allCategoryCodes];
+    ConsultationState.tempCategoryFilter = [...allCategoryCodes];
+    updateCategoryFilterLabel();
+
+
 
     await refreshConsultationList();
 
