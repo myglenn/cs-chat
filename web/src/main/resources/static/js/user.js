@@ -807,11 +807,6 @@ function updateFormField(field, value) {
 
 
 
-
-
-
-
-
 async function initializeUserPage() {
     document.getElementById('searchButton').addEventListener('click', handleSearch);
     document.getElementById('searchInput').addEventListener('keyup', e => {
@@ -829,6 +824,32 @@ async function initializeUserPage() {
 
 
 document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const iconMap = [
+            { id: 'searchButton', type: 'search', size: 18 },
+            { selector: '#searchWrapper', type: 'search', size: 16, prepend: true, className: 'search-icon' },
+            { id: 'openUserModalBtn', type: 'plus', size: 16, prepend: true },
+            { id: 'fabButton', type: 'plus', size: 24 },
+            { selector: '[data-action="openUserModal"]', type: 'userPlus', size: 20, prepend: true },
+            { selector: '[onclick="closeBulkActionModal()"]', type: 'close', size: 16 },
+            { selector: '[onclick="bulkDeleteUsers()"]', type: 'trash', size: 16, prepend: true }
+        ];
+
+        iconMap.forEach(item => {
+            const btn = item.id ? document.getElementById(item.id) : document.querySelector(item.selector);
+            if (btn) {
+                const icon = Icon({ type: item.type, size: item.size });
+                if (item.className) icon.classList.add(item.className);
+                if (item.prepend) {
+                    btn.prepend(icon);
+                } else {
+                    btn.appendChild(icon);
+                }
+            }
+        });
+    } catch (e) {
+        console.error("Failed to inject icons:", e);
+    }
     await window.authReady;
     initializeUserPage();
 });

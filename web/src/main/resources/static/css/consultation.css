@@ -608,12 +608,18 @@
 .chat-list-search .search-icon {
     position: absolute;
     left: 0.75rem;
-    top: 0.625rem;
+    /*top: 0.625rem;*/
+    top: 50%;
+    transform: translateY(-50%);
     width: 1rem;
     height: 1rem;
     color: var(--muted-foreground);
     pointer-events: none;
     z-index: 1;
+}
+
+.form-input.has-icon-left {
+    padding-left: 2.5rem;
 }
 
 .chat-list-search .form-input {
