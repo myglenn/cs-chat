@@ -41,7 +41,8 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(customAuthenticationEntryPoint))
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/", "/login", "/api/auth/**", "/js/**", "/css/**", "/images/**", "/ws-stomp/**").permitAll()
+                        .requestMatchers("/", "/login", "/api/auth/**", "/js/**", "/css/**", "/images/**").permitAll()
+                        .requestMatchers("/ws-stomp/**").authenticated()
                         .requestMatchers("/user").hasRole("SUPER_ADMIN")
                         .requestMatchers("/agency").hasAnyRole("SUPER_ADMIN", "OPERATOR")
                         .requestMatchers("/consultation").authenticated()

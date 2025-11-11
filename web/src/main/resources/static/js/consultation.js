@@ -982,6 +982,24 @@ async function sendChatMessage() {
         const currentCon = ConsultationState.currentConsultation;
         const fileIds = ConsultationState.attachedFiles.map(f => f.id);
 
+        const localMessage = {
+            id: `temp_${Date.now()}`,
+            chnId: currentCon.id,
+            content: text,
+            regDt: new Date().toISOString(),
+            sender: AppState.currentUser,
+            files: ConsultationState.attachedFiles.map(f => ({
+                id: f.id,
+                name: f.name,
+                type: f.type,
+                size: f.size,
+                downloadUrl: `/api/msg/files/download/${f.id}`
+            }))
+        };
+
+        ConsultationState.currentConsultation.messages.push(localMessage);
+        renderMessages(ConsultationState.currentConsultation.messages);
+
         if (currentCon.id === null) {
             const payload = {
                 type: 'DM',
@@ -1016,6 +1034,7 @@ async function sendChatMessage() {
 
 
         input.value = '';
+        input.blur();
         ConsultationState.attachedFiles = [];
         const attachedFilesContainer = document.getElementById('attachedFilesContainer');
         if (attachedFilesContainer) {
@@ -1451,6 +1470,12 @@ function onGlobalUpdate(updateData) {
         return;
     }
 
+    const isMyMessage = updateData.sender && String(updateData.sender.id) === String(AppState.currentUser.id);
+    const isViewing = ConsultationState.currentConsultation && String(ConsultationState.currentConsultation.id) === String(chnId);
+
+    if (isMyMessage && isViewing) {
+        return;
+    }
 
     let previewItem = ConsultationState.consultations.find(c => String(c.id) === String(chnId));
     if (isNewChannel && !previewItem) {
@@ -1459,9 +1484,21 @@ function onGlobalUpdate(updateData) {
     }
 
     if (!previewItem) {
+        if (!isNewChannel) {
+            if (!isMyMessage) {
+                document.querySelectorAll('.filter-chip').forEach(chip => {
+                    if (!chip.classList.contains('active')) {
+                        if (!chip.querySelector('.new-message-dot')) {
+                            const dot = document.createElement('span');
+                            dot.className = 'new-message-dot';
+                            chip.appendChild(dot);
+                        }
+                    }
+                });
+            }
+        }
         return;
     }
-
 
     if (isNewChannel) {
         Object.assign(previewItem, newChannelData);
@@ -1469,10 +1506,6 @@ function onGlobalUpdate(updateData) {
         previewItem.lastMessage = updateData.content;
         previewItem.lastMessageTime = updateData.regDt;
 
-        const isMyMessage = updateData.sender && String(updateData.sender.id) === String(AppState.currentUser.id);
-
-
-        const isViewing = ConsultationState.currentConsultation && String(ConsultationState.currentConsultation.id) === String(chnId);
 
         if (!isMyMessage && !isViewing) {
             previewItem.unreadCount = (previewItem.unreadCount || 0) + 1;
@@ -1492,6 +1525,19 @@ function onGlobalUpdate(updateData) {
                         ConsultationState.currentConsultation.hasAdminMessage = true;
                     }
                 }
+            }
+
+            if (!isMyMessage) {
+                const currentUserRole = AppState.currentUser.role;
+                let readApiEndpoint = '';
+                if (currentUserRole === 'SUPER_ADMIN' || currentUserRole === 'OPERATOR') {
+                    readApiEndpoint = `/admin/channels/${chnId}/read`;
+                } else {
+                    readApiEndpoint = `/agency/channels/${chnId}/read`;
+                }
+                apiClient.post(readApiEndpoint).catch(err => {
+                    console.error("Auto-read status update failed:", err);
+                });
             }
             ConsultationState.currentConsultation.messages.push(updateData);
             renderMessages(ConsultationState.currentConsultation.messages);
@@ -1514,6 +1560,11 @@ function onGlobalUpdate(updateData) {
         return b.id - a.id;
     })
     renderConsultationList();
+    const activeChip = document.querySelector('.filter-chip.active');
+    if (activeChip) {
+        const dot = activeChip.querySelector('.new-message-dot');
+        if (dot) dot.remove();
+    }
 }
 
 
@@ -2005,12 +2056,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     await window.authReady;
     await window.codesReady;
 
-
-    const allCategoryCodes = (AppState.commonCodes['CHN_CATEGORY'] || []).map(c => c.code);
-    ConsultationState.categoryFilter = [...allCategoryCodes];
-    ConsultationState.tempCategoryFilter = [...allCategoryCodes];
-    updateCategoryFilterLabel();
-
     try {
         await apiClient.connectWebSocket();
         apiClient.subscribe(
@@ -2021,6 +2066,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
         console.error("WebSocket 연결 실패:", error);
     }
+
+
+    const allCategoryCodes = (AppState.commonCodes['CHN_CATEGORY'] || []).map(c => c.code);
+    ConsultationState.categoryFilter = [...allCategoryCodes];
+    ConsultationState.tempCategoryFilter = [...allCategoryCodes];
+    updateCategoryFilterLabel();
+
+
 
     await refreshConsultationList();
 

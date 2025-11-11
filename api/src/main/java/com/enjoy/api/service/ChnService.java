@@ -6,10 +6,7 @@ import com.enjoy.common.domain.ChnAgcMap;
 import com.enjoy.common.domain.ChnLog;
 import com.enjoy.common.domain.Usr;
 import com.enjoy.common.dto.agc.AgcInfoDTO;
-import com.enjoy.common.dto.chn.ChnAddDTO;
-import com.enjoy.common.dto.chn.ChnClosedDTO;
-import com.enjoy.common.dto.chn.ChnInfoDTO;
-import com.enjoy.common.dto.chn.ChnSearchCondition;
+import com.enjoy.common.dto.chn.*;
 import com.enjoy.common.dto.msg.MsgInfoDTO;
 import com.enjoy.common.dto.msg.MsgSendDTO;
 import com.enjoy.common.dto.usr.UsrInfoDTO;
@@ -17,6 +14,7 @@ import com.enjoy.common.exception.BusinessException;
 import com.enjoy.common.exception.ErrorCodes;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -44,9 +42,9 @@ public class ChnService {
     private final ChnAgcMapMapper chnAgcMapMapper;
     private final ChnLogMapper chnLogMapper;
     private final UsrMapper usrMapper;
-    private final SimpMessageSendingOperations messagingTemplate;
     private final ChnUsrReadStatusMapper chnUsrReadStatusMapper;
     private final CmnSeqService cmnSeqService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ChnInfoDTO createChannelByAgency(String loginId, ChnAddDTO requestDTO) {
         Usr creator = usrMapper.findByLoginId(loginId)
@@ -177,11 +175,8 @@ public class ChnService {
 
         ChnInfoDTO newChannelInfo = findChannelById(chn.getId());
 
+        eventPublisher.publishEvent(new ChnBroadcastEvtDTO(newChannelInfo));
 
-        List<String> participantLoginIds = findParticipantLoginIdsByChnId(chn.getId());
-        participantLoginIds.forEach(id -> {
-            messagingTemplate.convertAndSend("/topic/user/" + id, newChannelInfo);
-        });
         return newChannelInfo;
     }
 
