@@ -4,6 +4,9 @@ class ApiClient {
         this.accessToken = null;
         this.stompClient = null;
         this.subscriptions = new Map();
+
+        this.reconnectDelay = 5000;
+        this.isConnecting = false;
     }
 
     setToken(accessToken, rememberMe = false) {
@@ -147,29 +150,54 @@ class ApiClient {
     }
 
     connectWebSocket() {
-
         return new Promise((resolve, reject) => {
             if (this.stompClient && this.stompClient.connected) {
                 resolve();
                 return;
             }
+            if (this.isConnecting) {
+                reject("Already attempting to connect.");
+                return;
+            }
+            this.isConnecting = true;
 
             const socket = new SockJS("/ws-stomp");
             this.stompClient = Stomp.over(socket);
 
-            // this.stompClient.debug = null;
+            this.stompClient.heartbeat.outgoing = 20000;
+            this.stompClient.heartbeat.incoming = 20000;
+
+            this.stompClient.debug = null;
 
             const headers = {};
             if (this.accessToken) {
                 headers['Authorization'] = `Bearer ${this.accessToken}`;
             }
 
-            this.stompClient.connect(headers, () => {
-                resolve();
-            }, (error) => {
-                console.error("WebSocket connection error:", error);
-                reject(error);
-            });
+            this.stompClient.connect(headers,
+                () => { // onConnect (연결 성공)
+                    this.isConnecting = false;
+                    console.log("WebSocket connected.");
+                    this.subscriptions.forEach((subInfo, topic) => {
+                        const newSubscription = this.stompClient.subscribe(topic, (message) => {
+                            subInfo.callback(JSON.parse(message.body));
+                        });
+                        subInfo.subscription = newSubscription; // 새 구독 정보로 갱신
+                    });
+
+                    resolve();
+                },
+                (error) => {
+                    this.isConnecting = false;
+                    console.error("WebSocket connection error, attempting reconnect...", error);
+
+                    setTimeout(() => {
+                        this.connectWebSocket();
+                    }, this.reconnectDelay);
+
+                    reject(error);
+                }
+            );
         });
     }
 
@@ -183,11 +211,12 @@ class ApiClient {
 
     subscribe(topic, callback) {
         if (!this.stompClient || !this.stompClient.connected) {
-            console.error("Connect to WebSocket before subscribing.");
+            console.warn("WebSocket not connected. Storing subscription for later.");
+            this.subscriptions.set(topic, { subscription: null, callback });
             return;
         }
-
         if (this.subscriptions.has(topic)) {
+            this.subscriptions.get(topic).callback = callback;
             return;
         }
 
@@ -195,13 +224,16 @@ class ApiClient {
             callback(JSON.parse(message.body));
         });
 
-        this.subscriptions.set(topic, subscription);
+        this.subscriptions.set(topic, { subscription, callback });
         return topic;
     }
 
     unsubscribe(topic) {
         if (this.subscriptions.has(topic)) {
-            this.subscriptions.get(topic).unsubscribe();
+            const subInfo = this.subscriptions.get(topic);
+            if (subInfo.subscription) {
+                subInfo.subscription.unsubscribe();
+            }
             this.subscriptions.delete(topic);
         }
     }
