@@ -18,6 +18,12 @@
     --input-background: #2b3b56;
 }
 
+.logo svg {
+    width: 3rem;
+    height: 3rem;
+    color: #ffffff;
+}
+
 
 .login-container {
     min-height: 100svh;
@@ -30,10 +36,14 @@
 
 .theme-toggle {
     position: fixed;
-    top: 1rem;
-    right: 1rem;
-    padding: 0.625rem;
-    border-radius: var(--radius);
+    top: 1.25rem;
+    right: 1.25rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background-color: var(--card);
     border: 1px solid var(--border);
     cursor: pointer;
@@ -84,8 +94,11 @@
 }
 
 .login-header {
-    text-align: center;
     margin-bottom: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem
 }
 
 .logo-container {
@@ -110,25 +123,18 @@
         width: 6rem;
         height: 6rem;
     }
-}
-
-.logo svg {
-    width: 2.5rem;
-    height: 2.5rem;
-    color: #ffffff;
-}
-
-@media (min-width: 768px) {
     .logo svg {
-        width: 3rem;
-        height: 3rem;
+        width: 3.5rem;
+        height: 3.5rem;
     }
 }
+
 
 .login-title-group {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    align-items: center;
 }
 
 .login-title {

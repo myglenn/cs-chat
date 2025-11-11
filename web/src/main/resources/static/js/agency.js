@@ -1004,6 +1004,38 @@ function formatTel(value) {
 
 
 document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const iconMap = [
+            { id: 'searchButton', type: 'search', size: 18 },
+            { selector: '#searchWrapper', type: 'search', size: 16, prepend: true, className: 'search-icon' },
+            { id: 'openAgencyModalBtn', type: 'plus', size: 16, prepend: true }, // "등록" 버튼
+            { id: 'fabButton', type: 'plus', size: 24 },
+            { selector: '[data-action="openAgencyModal"]', type: 'building', size: 20, prepend: true },
+            { selector: '[onclick="closeBulkActionModal()"]', type: 'close', size: 16 },
+            { selector: '[onclick="bulkDeleteAgencies()"]', type: 'trash', size: 16, prepend: true }
+        ];
+
+        iconMap.forEach(item => {
+            const btn = item.id ? document.getElementById(item.id) : document.querySelector(item.selector);
+            if (btn) {
+                const icon = Icon({ type: item.type, size: item.size });
+                if (item.className) icon.classList.add(item.className);
+                if (item.prepend) {
+                    btn.prepend(icon);
+                } else {
+                    btn.appendChild(icon);
+                }
+            }
+        });
+
+        const openModalBtn = document.getElementById('openAgencyModalBtn');
+        if(openModalBtn) {
+            openModalBtn.addEventListener('click', () => openAgencyModal());
+        }
+
+    } catch (e) {
+        console.error("Failed to inject icons:", e);
+    }
     await window.authReady;
     initializeAgencyPage();
 });

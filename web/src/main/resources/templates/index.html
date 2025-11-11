@@ -22,8 +22,9 @@
 <main id="mainContent" class="main-content">
     <div class="chat-layout" id="chatLayout">
         <div class="chat-list" id="chatList">
-            <div class="chat-list-header">
-                <div class="chat-list-search">
+            <div class="chat-list-header" >
+                <div class="chat-list-search" id="searchWrapper">
+                    <!--         TODO:cfg 적용           -->
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                          class="search-icon">
@@ -31,13 +32,7 @@
                         <path d="m21 21-4.3-4.3"></path>
                     </svg>
                     <input type="text" class="form-input" id="listSearchInput" placeholder="대리점 검색">
-                    <button class="search-btn" id="listSearchBtn" aria-label="검색">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <path d="m21 21-4.3-4.3"></path>
-                        </svg>
-                    </button>
+                    <button class="search-btn" id="listSearchBtn" aria-label="검색"></button>
                     <button class="btn btn-primary" id="createNewChatBtn" style="margin-left: 0.5rem;">
                     </button>
                 </div>
@@ -48,13 +43,6 @@
 
                     <div class="category-filter-wrapper">
                         <button class="category-filter-btn" id="categoryFilterBtn">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                 stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="1"></circle>
-                                <circle cx="12" cy="5" r="1"></circle>
-                                <circle cx="12" cy="19" r="1"></circle>
-                            </svg>
                             <span id="categoryFilterLabel">전체</span>
                         </button>
                         <div class="category-filter-dropdown" id="categoryFilterDropdown">
@@ -88,25 +76,14 @@
 
         <div class="chat-view" id="chatView">
             <div class="chat-header">
-                <button class="back-button" id="backToListBtn">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="m15 18-6-6 6-6"></path>
-                    </svg>
-                </button>
+                <button class="back-button" id="backToListBtn"></button>
                 <div class="chat-header-info">
                     <h2 class="chat-header-title" id="chatTitle">상담을 선택해주세요</h2>
                     <p class="chat-header-subtitle" id="chatSubtitle"></p>
                     <p class="chat-header-preview" id="chatPreview"></p>
                 </div>
                 <div class="chat-header-actions">
-                    <button class="btn btn-icon" id="toggleMessageSearchBtn" title="메시지 검색">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <path d="m21 21-4.3-4.3"></path>
-                        </svg>
-                    </button>
+                    <button class="btn btn-icon" id="toggleMessageSearchBtn" title="메시지 검색"></button>
                     <button class="btn btn-outline btn-icon" id="leaveBtn" title="나가기" style="display: none;">
                     </button>
                     <button class="btn btn-primary btn-icon" id="completeBtn" title="완료" style="display: none;">
@@ -115,27 +92,11 @@
             </div>
 
             <div class="chat-search-header" id="messageSearchHeader" style="display: none;">
-                <button class="btn btn-icon" id="closeMessageSearchBtn">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M18 6 6 18"></path>
-                        <path d="m6 6 12 12"></path>
-                    </svg>
-                </button>
+                <button class="btn btn-icon" id="closeMessageSearchBtn"></button>
                 <input type="text" class="chat-search-input" id="messageSearchInput" placeholder="메시지 검색">
                 <div class="chat-search-result-count" id="messageSearchResultCount">0/0</div>
-                <button class="btn btn-icon" id="searchPrevBtn" disabled>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="m18 15-6-6-6 6"></path>
-                    </svg>
-                </button>
-                <button class="btn btn-icon" id="searchNextBtn" disabled>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="m6 9 6 6 6-6"></path>
-                    </svg>
-                </button>
+                <button class="btn btn-icon" id="searchPrevBtn" disabled></button>
+                <button class="btn btn-icon" id="searchNextBtn" disabled></button>
             </div>
 
             <div class="chat-messages" id="chatMessages">
@@ -146,20 +107,9 @@
             <div class="chat-input-container" id="chatInputContainer" style="display: none;">
                 <div id="attachedFilesContainer" class="attached-files-container" style="display: none;"></div>
                 <div class="chat-input-wrapper">
-                    <button class="btn btn-icon" id="attachFileBtn" title="파일 첨부">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
-                        </svg>
-                    </button>
+                    <button class="btn btn-icon" id="attachFileBtn" title="파일 첨부"></button>
                     <textarea class="chat-input" id="messageInput" placeholder="메시지를 입력하세요..." rows="1"></textarea>
-                    <button class="btn btn-primary btn-icon" id="sendMessageBtn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="m22 2-7 20-4-9-9-4Z"></path>
-                            <path d="M22 2 11 13"></path>
-                        </svg>
-                    </button>
+                    <button class="btn btn-primary btn-icon" id="sendMessageBtn"></button>
                 </div>
                 <input type="file" id="fileInput" style="display: none;" multiple>
             </div>

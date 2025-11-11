@@ -1974,6 +1974,34 @@ async function handleLeaveChannel() {
 
 document.addEventListener('DOMContentLoaded', async () => {
 
+    try {
+        const iconMap = [
+            { id: 'listSearchBtn', type: 'search', size: 18 },
+            { id: 'categoryFilterBtn', type: 'filter', size: 16, prepend: true },
+            { id: 'backToListBtn', type: 'chevronLeft', size: 20 },
+            { id: 'toggleMessageSearchBtn', type: 'search', size: 20 },
+            { id: 'closeMessageSearchBtn', type: 'close', size: 20 },
+            { id: 'searchPrevBtn', type: 'chevronUp', size: 20 },
+            { id: 'searchNextBtn', type: 'chevronDown', size: 20 },
+            { id: 'attachFileBtn', type: 'attach', size: 20 },
+            { id: 'sendMessageBtn', type: 'send', size: 16 }
+        ];
+
+        iconMap.forEach(item => {
+            const btn = document.getElementById(item.id);
+            if (btn) {
+                const icon = Icon({ type: item.type, size: item.size });
+                if (item.prepend) {
+                    btn.prepend(icon); // 텍스트 앞에 아이콘 삽입
+                } else {
+                    btn.appendChild(icon); // 버튼에 아이콘 삽입
+                }
+            }
+        });
+    } catch (e) {
+        console.error("Failed to inject icons:", e);
+    }
+
     await window.authReady;
     await window.codesReady;
 

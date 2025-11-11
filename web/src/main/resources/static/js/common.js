@@ -78,10 +78,30 @@ async function fetchAndSetCurrentUser() {
 }
 
 function initTheme() {
+    const themeToggle = document.getElementById('themeToggle');
+    const themeToggleMobile = document.getElementById('themeToggleMobile');
+
     if (AppState.theme === 'dark') {
         document.documentElement.classList.add('dark');
+
+        if (themeToggle) {
+            themeToggle.innerHTML = '';
+            themeToggle.appendChild(Icon({ type: 'sunHeader', size: 16 }));
+        }
+        if (themeToggleMobile) {
+            themeToggleMobile.innerHTML = '';
+            themeToggleMobile.appendChild(Icon({ type: 'sunHeader', size: 16 }));
+        }
     } else {
         document.documentElement.classList.remove('dark');
+        if (themeToggle) {
+            themeToggle.innerHTML = '';
+            themeToggle.appendChild(Icon({ type: 'moonHeader', size: 16 }));
+        }
+        if (themeToggleMobile) {
+            themeToggleMobile.innerHTML = '';
+            themeToggleMobile.appendChild(Icon({ type: 'moonHeader', size: 16 }));
+        }
     }
 }
 
@@ -1055,6 +1075,43 @@ async function logout() {
 
 
 document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const iconMap = [
+            { id: 'openProfileModal', type: 'settings', size: 16, prepend: true },
+            { id: 'logout-button', type: 'logout', size: 16, prepend: true },
+
+            { id: 'menuToggle', type: 'menu', size: 16 },
+            { selector: '#header-mobile .avatar', type: 'userAvatar', size: 16 },
+            { id: 'openProfileModalMobile', type: 'settings', size: 16, prepend: true },
+            { id: 'logout-button-mobile', type: 'logout', size: 16, prepend: true },
+
+            { selector: '#sidebar [data-page="agency"]', type: 'building', size: 16, prepend: true },
+            { selector: '#sidebar [data-page="user"]', type: 'userPlus', size: 16, prepend: true },
+            { selector: '#sidebar [data-page="consultation"]', type: 'consultation', size: 16, prepend: true },
+
+            { id: 'closeSidebar', type: 'close', size: 16 },
+            { selector: '#sidebarMobile [data-page="agency"]', type: 'building', size: 20, prepend: true },
+            { selector: '#sidebarMobile [data-page="user"]', type: 'userPlus', size: 20, prepend: true },
+            { selector: '#sidebarMobile [data-page="consultation"]', type: 'consultation', size: 20, prepend: true },
+        ];
+
+        iconMap.forEach(item => {
+            const el = item.id ? document.getElementById(item.id) : document.querySelector(item.selector);
+            if (el) {
+                const icon = Icon({ type: item.type, size: item.size });
+                if (icon) {
+                    if (item.className) icon.classList.add(item.className);
+                    if (item.prepend) {
+                        el.prepend(icon);
+                    } else {
+                        el.appendChild(icon);
+                    }
+                }
+            }
+        });
+    } catch (e) {
+        console.error("Failed to inject icons:", e);
+    }
 
     initTheme();
 
@@ -1064,6 +1121,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const themeToggle = document.getElementById('themeToggle');
     const themeToggleMobile = document.getElementById('themeToggleMobile');
+
+    const pcAvatar = document.querySelector('.header-pc .avatar');
+    const mobileAvatar = document.querySelector('.header-mobile .avatar');
+
+    if (pcAvatar && pcAvatar.children.length === 0 && !pcAvatar.textContent.trim()) {
+        pcAvatar.appendChild(Icon({ type: 'userAvatar', size: 16 }));
+    }
+    if (mobileAvatar && mobileAvatar.children.length === 0 && !mobileAvatar.textContent.trim()) {
+        mobileAvatar.appendChild(Icon({ type: 'userAvatar', size: 16 }));
+    }
 
     if (themeToggle) {
         themeToggle.addEventListener('click', toggleTheme);
