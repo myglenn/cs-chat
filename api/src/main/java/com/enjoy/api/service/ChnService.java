@@ -44,7 +44,6 @@ public class ChnService {
     private final ChnAgcMapMapper chnAgcMapMapper;
     private final ChnLogMapper chnLogMapper;
     private final UsrMapper usrMapper;
-    private final AgcMapper agcMapper;
     private final SimpMessageSendingOperations messagingTemplate;
     private final ChnUsrReadStatusMapper chnUsrReadStatusMapper;
     private final CmnSeqService cmnSeqService;
@@ -145,13 +144,14 @@ public class ChnService {
 
     @Transactional
     public void markChannelAsRead(Long chnId, Long userId) {
-        System.out.println("chnId = " + chnId);
-        System.out.println("userId = " + userId);
         Long lastMsgId = chnUsrReadStatusMapper.findLastMsgIdByChnId(chnId);
         if (lastMsgId != null) {
             chnUsrReadStatusMapper.upsertReadStatus(chnId, userId, lastMsgId);
         }
-        System.out.println("lastMsgId = " + lastMsgId);
+    }
+
+    public void updateChannelStatus(Long chnId, String status) {
+        chnMapper.updateStatus(chnId, status);
     }
 
 
@@ -204,7 +204,6 @@ public class ChnService {
                             map -> ((Number) map.get("mapValue")).longValue(),
                             (existingValue, newValue) -> newValue
                     ));
-            System.out.println("### Raw readStatusList from Mapper: "+ readStatusList);
         } else {
             lastReadMap = Collections.emptyMap();
         }
@@ -216,24 +215,19 @@ public class ChnService {
                             Long currentChnId = chn.getId();
                             Long lastReadMsgId = lastReadMap.get(currentChnId);
                             Long channelLastMsgId = chn.getLastMsgId();
-                            System.out.println("Calculating unread for chnId=" +currentChnId+ ": lastRead=" +lastReadMsgId+", channelLast=" +channelLastMsgId);
 
                             long count;
                             if (lastReadMsgId == null) {
                                 count = chnUsrReadStatusMapper.countUnreadMessages(currentChnId, 0L);
-                                System.out.println(" -> lastRead is null, count=" + count);
                             } else if (channelLastMsgId != null && lastReadMsgId < channelLastMsgId) {
                                 count = chnUsrReadStatusMapper.countUnreadMessages(currentChnId, lastReadMsgId);
-                                System.out.println(" -> lastRead < channelLast, count=" + count);
                             } else {
                                 count = 0L;
-                                System.out.println(" -> Already read or no new messages, count=0");
                             }
                             return count;
                         }
                 ));
 
-        System.out.println("unreadCountMap = " + unreadCountMap);
 
         List<Long> creatorIds = chnList.stream().map(Chn::getCreatorId).distinct().collect(Collectors.toList());
         Map<Long, UsrInfoDTO> creatorMap = usrMapper.findInfoByIds(creatorIds).stream()

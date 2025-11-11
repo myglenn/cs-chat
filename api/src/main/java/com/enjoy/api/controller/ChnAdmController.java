@@ -61,7 +61,6 @@ public class ChnAdmController {
         ChnInfoDTO channelInfo = chnService.findChannelById(chnId);
         List<MsgInfoDTO> messages = msgService.findMessagesByChannelId(chnId);
         channelInfo.setMessages(messages);
-        System.out.println("channelInfo = " + channelInfo);
         return ResponseEntity.ok(channelInfo);
     }
 

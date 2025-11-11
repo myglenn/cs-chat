@@ -156,9 +156,11 @@ async function openDmModal() {
 
     const modalBody = document.createElement('div');
     modalBody.className = 'modal-body';
+    modalBody.style.cssText = 'flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0;';
+
     const form = document.createElement('form');
     form.className = 'modal-form modal-form-dm';
-
+    form.style.cssText = 'display: flex; flex-direction: column; height: 100%;';
     const agencySearchInput = createElementSafe('input', {
         id: 'dmAgencySearchInput',
         className: 'form-input',
@@ -169,28 +171,62 @@ async function openDmModal() {
         }
     });
 
+    const searchGroup = createFormGroup('dmAgencySearch', '대리점 검색', agencySearchInput);
+    searchGroup.style.cssText = 'padding: 1.5rem 1.5rem 0.5rem 1.5rem; flex-shrink: 0;';
+
+    const selectAllCheckbox = createElementSafe('input', {
+
+        id: 'dmSelectAllCheckbox',
+        attributes: { type: 'checkbox' }
+    });
+
+    const selectAllLabel = createElementSafe('label', {
+        className: 'checkbox-label',
+        attributes: {
+            for: 'dmSelectAllCheckbox',
+            style: 'padding: 0.5rem; font-weight: 500; border-bottom: 1px solid var(--border);' // 목록과 구분선
+        },
+        children: [
+            selectAllCheckbox,
+            createElementSafe('span', { className: 'checkbox-custom' }),
+            createElementSafe('span', { className: 'checkbox-text', text: '전체 선택' })
+        ]
+    });
+
     const agencyCheckboxContainer = createElementSafe('div', {
         id: 'dmAgencyCheckboxContainer',
-        className: 'checkbox-list-container',
-        attributes: {style: 'height: 150px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--border-radius); padding: 0.5rem;'}
+        attributes: {
+            style: 'flex: 1; overflow-y: auto; padding: 0.5rem;'
+        }
     });
 
 
     const agencyCountDisplay = createElementSafe('div', {
-        className: 'form-group-description',
-        attributes: {style: 'text-align: right; margin-top: 0.5rem;'},
+        className: 'error-message',
+        attributes: {style: 'text-align: right;'},
         children: [
             createElementSafe('span', {id: 'dmSelectedCount', text: '0'}),
             createElementSafe('span', {text: '개 선택됨'})
         ]
     });
 
-    form.append(
-        createFormGroup('dmAgencySearch', '대리점 검색', agencySearchInput),
-        createFormGroup('dmAgencyCheckboxContainer', '받는 대리점 *', agencyCheckboxContainer, 'dmAgencyError'),
-        agencyCountDisplay,
+    const listGroup = createFormGroup('dmAgencyCheckboxContainer', '받는 대리점 *',
+        createElementSafe('div', {
+            className: 'checkbox-list-container',
+            attributes: {
+                style: 'display: flex; flex-direction: column; flex: 1; min-height: 0; border: 1px solid var(--border); border-radius: var(--radius-md);'
+            },
+            children: [ selectAllLabel, agencyCheckboxContainer ]
+        }),
+        'dmAgencyError'
     );
+
+    listGroup.style.cssText = 'flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0.5rem 1.5rem 1.5rem 1.5rem;';
+    listGroup.appendChild(agencyCountDisplay);
+
+    form.append(searchGroup, listGroup);
     modalBody.appendChild(form);
+
 
     const modalFooter = document.createElement('div');
     modalFooter.className = 'modal-footer';
@@ -258,6 +294,37 @@ async function openDmModal() {
     modalOverlay.appendChild(modalContent);
     document.body.appendChild(modalOverlay);
 
+    const getFilteredAgencies = () => {
+        const searchTerm = agencySearchInput.value.toLowerCase();
+        if (!searchTerm) return allAgencies; // 검색어가 없으면 전체 반환
+        return allAgencies.filter(agency =>
+            agency.name.toLowerCase().includes(searchTerm)
+        );
+    };
+
+    function updateSelectAllState() {
+        const filteredAgencies = getFilteredAgencies();
+        if (filteredAgencies.length === 0) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+            return;
+        }
+        const allFilteredSelected = filteredAgencies.every(agency =>
+            selectedAgencyIds.has(String(agency.id))
+        );
+
+        if (allFilteredSelected) {
+            selectAllCheckbox.checked = true;
+            selectAllCheckbox.indeterminate = false;
+        } else {
+            selectAllCheckbox.checked = false;
+            const anyFilteredSelected = filteredAgencies.some(agency =>
+                selectedAgencyIds.has(String(agency.id))
+            );
+            selectAllCheckbox.indeterminate = anyFilteredSelected;
+        }
+    }
+
     function renderAgencyCheckboxes(agenciesToRender) {
         agencyCheckboxContainer.innerHTML = '';
         agenciesToRender.forEach(agency => {
@@ -279,6 +346,7 @@ async function openDmModal() {
                 }
 
                 document.getElementById('dmSelectedCount').textContent = selectedAgencyIds.size;
+                updateSelectAllState();
             });
 
             const label = createElementSafe('label', {
@@ -292,25 +360,38 @@ async function openDmModal() {
             });
             agencyCheckboxContainer.appendChild(label);
         });
+        updateSelectAllState();
     }
 
-    agencySearchInput.addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase();
-        const filteredAgencies = allAgencies.filter(agency =>
-            agency.name.toLowerCase().includes(searchTerm)
-        );
 
+
+    selectAllCheckbox.addEventListener('change', (e) => {
+        const isChecked = e.target.checked;
+        const filteredAgencies = getFilteredAgencies();
+
+        filteredAgencies.forEach(agency => {
+            if (isChecked) {
+                selectedAgencyIds.add(String(agency.id));
+            } else {
+                selectedAgencyIds.delete(String(agency.id));
+            }
+        });
+
+        renderAgencyCheckboxes(filteredAgencies);
+        document.getElementById('dmSelectedCount').textContent = selectedAgencyIds.size;
+    });
+
+    agencySearchInput.addEventListener('input', (e) => {
+        const filteredAgencies = getFilteredAgencies();
         renderAgencyCheckboxes(filteredAgencies);
     });
 
 
+
     try {
         const agencies = await apiClient.get('/admin/agencies/search');
-        console.log("Fetched agencies data:", agencies);
         allAgencies = agencies;
         renderAgencyCheckboxes(allAgencies);
-
-
     } catch (error) {
         Toast.error('대리점 목록을 불러오는 데 실패했습니다.');
     }
@@ -402,7 +483,10 @@ function updateCategoryFilterLabel() {
     const label = document.getElementById('categoryFilterLabel');
     const count = ConsultationState.categoryFilter.length;
     const categories = AppState.commonCodes['CHN_CATEGORY'] || [];
+    const totalCategories = categories.length;
     if (count === 0) {
+        label.textContent = '0개 선택';
+    } else if (count === totalCategories) {
         label.textContent = '전체';
     } else if (count === 1) {
         const selectedCode = ConsultationState.categoryFilter[0];
@@ -428,6 +512,13 @@ async function fetchConsultations() {
         if (ConsultationState.statusFilter !== 'all') {
             params.append('status', ConsultationState.statusFilter);
         }
+
+        const allCategories = AppState.commonCodes['CHN_CATEGORY'] || [];
+
+        if (ConsultationState.categoryFilter.length < allCategories.length) {
+            ConsultationState.categoryFilter.forEach(cat => params.append('category', cat));
+        }
+
         if (ConsultationState.categoryFilter.length > 0) {
             ConsultationState.categoryFilter.forEach(cat => params.append('category', cat));
         }
@@ -455,8 +546,23 @@ async function fetchConsultations() {
 }
 
 async function refreshConsultationList() {
+    if (ConsultationState.categoryFilter.length === 0) {
+        const listBody = document.getElementById('chatListBody');
+        if (listBody) {
+            listBody.innerHTML = '';
+            listBody.appendChild(
+                createElementSafe('div', {
+                    text: '선택된 카테고리가 없습니다',
+                    attributes: {
+                        style: 'padding: 2rem; text-align: center; color: var(--muted-foreground);'
+                    }
+                })
+            );
+        }
+        ConsultationState.consultations = [];
+        return;
+    }
     try {
-
         const channelList = await fetchConsultations();
         if (channelList) {
             ConsultationState.consultations = channelList;
@@ -660,19 +766,34 @@ async function selectConsultation(id, isUserAction = false) {
                 renderConsultationList();
             }
         }
+
+
+
         renderConsultationList();
         renderChatHeader(currentCon);
         renderMessages(currentCon.messages || [], unreadCountToScroll);
 
         const chatView = document.getElementById('chatView');
         if (chatView) chatView.classList.add('active');
-
+        const leaveBtn = document.getElementById('leaveBtn');
         const completeBtn = document.getElementById('completeBtn');
         const inputContainer = document.getElementById('chatInputContainer');
         const userRole = AppState.currentUser.role;
         const isAdmin = (userRole === 'SUPER_ADMIN' || userRole === 'OPERATOR');
 
+        if (leaveBtn) leaveBtn.style.display = 'none';
+        if (completeBtn) completeBtn.style.display = 'none';
+
         if (currentCon && currentCon.status !== 'CLOSED') {
+            if (
+                userRole === 'AGENCY_ADMIN' &&
+                currentCon.type === 'CON' &&
+                currentCon.status === 'IN_PROGRESS' &&
+                currentCon.hasAdminMessage === false
+            ) {
+                if (leaveBtn) leaveBtn.style.display = 'flex';
+            }
+
             if (isAdmin) {
                 completeBtn.style.display = 'flex';
             } else {
@@ -828,6 +949,20 @@ async function submitDm(agencyIdSet) {
 //     }
 // }
 
+function clearChatInputAndFiles() {
+    const input = document.getElementById('messageInput');
+    if (input) {
+        input.value = '';
+    }
+
+    ConsultationState.attachedFiles = [];
+    const attachedFilesContainer = document.getElementById('attachedFilesContainer');
+    if (attachedFilesContainer) {
+        attachedFilesContainer.innerHTML = '';
+        attachedFilesContainer.style.display = 'none';
+    }
+}
+
 async function sendChatMessage() {
     const input = document.getElementById('messageInput');
     const text = input.value.trim();
@@ -899,6 +1034,42 @@ function closeChat() {
     history.back();
 }
 
+function clearChatView() {
+    const chatView = document.getElementById('chatView');
+    const chatLayout = document.getElementById('chatLayout');
+    const titleEl = document.getElementById('chatTitle');
+    const messagesContainer = document.getElementById('chatMessages');
+    const inputContainer = document.getElementById('chatInputContainer');
+    const completeBtn = document.getElementById('completeBtn');
+
+    ConsultationState.currentConsultation = null;
+
+    if (chatView) chatView.classList.remove('active');
+    if (chatLayout) chatLayout.classList.remove('chat-active'); // 모바일 뷰 되돌리기
+    if (titleEl) titleEl.textContent = '상담을 선택해주세요';
+    const subtitleEl = document.getElementById('chatSubtitle');
+    const previewEl = document.getElementById('chatPreview');
+    if (subtitleEl) subtitleEl.textContent = '';
+    if (previewEl) previewEl.textContent = '';
+    if (messagesContainer) {
+        messagesContainer.innerHTML = '';
+        const placeholderDiv = createElementSafe('div', {
+            text: '상담을 선택하면 메시지가 표시됩니다',
+            attributes: {
+                style: 'text-align: center; color: var(--muted-foreground); padding: 2rem;'
+            }
+        });
+        messagesContainer.appendChild(placeholderDiv);
+    }
+    if (inputContainer) inputContainer.style.display = 'none';
+    if (completeBtn) completeBtn.style.display = 'none';
+
+    if (history.state && history.state.consultationId) {
+        history.pushState(null, '', window.location.pathname + window.location.search);
+    }
+    clearChatInputAndFiles();
+}
+
 function handleHistoryChange(state) {
     const chatLayout = document.getElementById('chatLayout');
     const chatView = document.getElementById('chatView');
@@ -919,6 +1090,7 @@ function handleHistoryChange(state) {
         if (ChatSearchState.isSearching) {
             closeChatSearch();
         }
+        clearChatInputAndFiles();
     }
 }
 
@@ -948,7 +1120,6 @@ function renderChatHeader(consultation) {
 }
 
 function renderMessages(messages, unreadCountToScroll = 0) {
-    console.log(messages);
     const messagesContainer = document.getElementById('chatMessages');
     if (!messagesContainer) return;
 
@@ -1309,6 +1480,19 @@ function onGlobalUpdate(updateData) {
 
 
         if (isViewing) {
+            if (ConsultationState.currentConsultation &&
+                ConsultationState.currentConsultation.hasAdminMessage === false) {
+                if (updateData.sender && updateData.sender.role) {
+                    const adminRoles = ['SUPER_ADMIN', 'OPERATOR'];
+                    if (adminRoles.includes(updateData.sender.role)) {
+                        const leaveBtn = document.getElementById('leaveBtn');
+                        if (leaveBtn) {
+                            leaveBtn.style.display = 'none';
+                        }
+                        ConsultationState.currentConsultation.hasAdminMessage = true;
+                    }
+                }
+            }
             ConsultationState.currentConsultation.messages.push(updateData);
             renderMessages(ConsultationState.currentConsultation.messages);
         }
@@ -1346,7 +1530,10 @@ async function openConsultationModal() {
 
 
     const modalContent = createElementSafe('div', {
-        className: 'modal-content'
+        className: 'modal-content',
+        attributes: {
+            style: 'max-height: 75svh; display: flex; flex-direction: column;'
+        }
     });
 
 
@@ -1371,7 +1558,10 @@ async function openConsultationModal() {
         className: 'modal-body'
     });
     const form = createElementSafe('form', {
-        className: 'modal-form'
+        className: 'modal-form',
+        attributes: {
+            style: 'display: flex; flex-direction: column; height: 100%;'
+        }
     });
 
 
@@ -1643,14 +1833,16 @@ async function submitComplete(selectedCategory) {
     try {
         await apiClient.put(`/admin/channels/${consultationId}/close`, payload);
         Toast.success('상담이 완료되었습니다');
-        // closeCompleteModal(); // 이미 2단계에서 모달을 닫음
-        const consultation = ConsultationState.consultations.find(c => c.id === consultationId);
-        if (consultation) {
-            consultation.status = 'CLOSED';
-        }
-        ConsultationState.currentConsultation.status = 'CLOSED';
-        selectConsultation(consultationId, false);
-        renderConsultationList();
+        // // closeCompleteModal(); // 이미 2단계에서 모달을 닫음
+        // const consultation = ConsultationState.consultations.find(c => c.id === consultationId);
+        // if (consultation) {
+        //     consultation.status = 'CLOSED';
+        // }
+        // ConsultationState.currentConsultation.status = 'CLOSED';
+        // selectConsultation(consultationId, false);
+        // renderConsultationList();
+        clearChatView();
+        await refreshConsultationList();
 
     } catch (error) {
         console.error("상담 완료 처리 실패:", error);
@@ -1754,10 +1946,43 @@ function openCompleteModal() {
 }
 
 
+async function handleLeaveChannel() {
+    if (!ConsultationState.currentConsultation) return;
+
+    const chnId = ConsultationState.currentConsultation.id;
+
+    CustomAlert.confirm(
+        '정말로 종료하시겠어요?',
+        '상담이 종료되며, 아직 상담이 진행 중이라면 답변받기 어려워요.',
+        async () => {
+            try {
+                await apiClient.put(`/agency/channels/${chnId}/withdraw`);
+
+                Toast.success('상담에서 나갔습니다.');
+
+                clearChatView();
+                refreshConsultationList();
+
+            } catch (error) {
+                Toast.error('나가기 처리에 실패했습니다.');
+                console.error("Failed to leave channel:", error);
+            }
+        }
+    );
+}
+
+
 document.addEventListener('DOMContentLoaded', async () => {
 
     await window.authReady;
     await window.codesReady;
+
+
+    const allCategoryCodes = (AppState.commonCodes['CHN_CATEGORY'] || []).map(c => c.code);
+    ConsultationState.categoryFilter = [...allCategoryCodes];
+    ConsultationState.tempCategoryFilter = [...allCategoryCodes];
+    updateCategoryFilterLabel();
+
     try {
         await apiClient.connectWebSocket();
         apiClient.subscribe(
@@ -1791,6 +2016,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
     const currentUserRole = AppState.currentUser.role;
+    const isAdmin = (currentUserRole === 'SUPER_ADMIN' || currentUserRole === 'OPERATOR');
+
+    if (!isAdmin) {
+        const searchIcon = document.querySelector('.chat-list-search .search-icon');
+        if (searchIcon) searchIcon.style.display = 'none';
+        const searchInput = document.getElementById('listSearchInput');
+        if (searchInput) searchInput.style.display = 'none';
+        const searchBtn = document.getElementById('listSearchBtn');
+        if (searchBtn) searchBtn.style.display = 'none';
+        const createChatBtn = document.getElementById('createNewChatBtn');
+        const newTitle = document.createElement('span');
+        newTitle.textContent = '상담창구';
+        newTitle.style.fontSize = '1.125rem';
+        newTitle.style.fontWeight = '500';
+        newTitle.style.display = 'flex';
+        newTitle.style.alignItems = 'center';
+        // newTitle.style.marginLeft = 'auto';
+        if (createChatBtn) {
+            createChatBtn.parentNode.insertBefore(newTitle, createChatBtn);
+            createChatBtn.style.marginLeft = 'auto';
+        }
+    }
+
     const createNewChatBtn = document.getElementById('createNewChatBtn');
     if (createNewChatBtn) {
         const btnIcon = Icon({type: 'send', size: 16});
@@ -1822,7 +2070,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (backBtn) {
         backBtn.addEventListener('click', () => {
-            closeChat();
+            if (window.innerWidth <= 768) {
+                closeChat();
+            } else {
+                clearChatView();
+            }
         });
     }
 
@@ -1920,10 +2172,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (fileInput && attachedFilesContainer) {
         fileInput.addEventListener('change', async (event) => {
-            console.log(">>> File Input Changed. event.target.files:", event.target.files);
             const files = event.target.files;
             if (!files || files.length === 0) {
-                console.log(`[File Change] Found ${files ? files.length : 'null/undefined'} files.`);
                 return;
             }
 
@@ -1966,8 +2216,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    const leaveBtn = document.getElementById('leaveBtn');
+    if (leaveBtn) {
+        leaveBtn.appendChild(Icon({ type: 'leave', size: 16 }));
+        leaveBtn.addEventListener('click', handleLeaveChannel);
+    }
+
     const completeBtn = document.getElementById('completeBtn');
     if (completeBtn) {
+        completeBtn.appendChild(Icon({ type: 'check', size: 16 }));
         completeBtn.addEventListener('click', () => {
             openCompleteModal();
         });

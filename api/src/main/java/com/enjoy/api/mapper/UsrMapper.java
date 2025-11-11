@@ -46,4 +46,6 @@ public interface UsrMapper {
     List<String> findLoginIdsByRoles(List<String> roles);
 
     int bulkUpdateStatus(@Param("ids") List<Long> ids, @Param("status") String status);
+
+    int bulkUpdateStatusByAgcId(@Param("agcId") Long agcId, @Param("status") String status);
 }

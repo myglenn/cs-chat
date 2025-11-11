@@ -38,5 +38,18 @@ public class UsrController {
         return ResponseEntity.ok().build();
     }
 
+    @PutMapping("/me/name")
+    public ResponseEntity<UsrInfoDTO> updateMyName(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody Map<String, String> payload) { // { "name": "새이름" }
+
+        String loginId = userDetails.getUsername();
+        String newName = payload.get("name"); // "name" 키로 새 이름을 받음
+
+        UsrInfoDTO updatedUser = usrService.updateMyName(loginId, newName);
+
+        return ResponseEntity.ok(updatedUser);
+    }
+
 
 }

@@ -41,7 +41,8 @@ class ApiClient {
         const url = `${this.baseURL}${path}`;
         const options = {
             method: method,
-            headers: {}
+            headers: {},
+            credentials: 'include'
         };
         if (this.accessToken) {
             options.headers['Authorization'] = `Bearer ${this.accessToken}`;
@@ -79,7 +80,7 @@ class ApiClient {
 
     async _refreshTokenAndRetry() {
         try {
-            const response = await fetch('/api/auth/reissue', {method: 'POST'});
+            const response = await fetch('/api/auth/reissue', {method: 'POST', credentials: 'include'});
 
             if (!response.ok) {
                 throw new Error('Failed to refresh token');
@@ -91,7 +92,9 @@ class ApiClient {
             return newAccessToken;
 
         } catch (error) {
-            console.error("Could not refresh token:", error);
+            console.error("Could not refresh token (e.g., 7 days expired):", error);
+            this.clearToken();
+            window.location.href = '/login?session=expired';
             return null;
         }
     }
@@ -100,7 +103,8 @@ class ApiClient {
         const url = `${this.baseURL}${path}`;
         const options = {
             method: 'POST',
-            headers: {}
+            headers: {},
+            credentials: 'include'
         };
 
         if (this.accessToken) {
@@ -146,7 +150,6 @@ class ApiClient {
 
         return new Promise((resolve, reject) => {
             if (this.stompClient && this.stompClient.connected) {
-                console.log("Already connected to WebSocket.");
                 resolve();
                 return;
             }
@@ -160,7 +163,6 @@ class ApiClient {
             }
 
             this.stompClient.connect(headers, () => {
-                console.log("WebSocket connected successfully!");
                 resolve();
             }, (error) => {
                 console.error("WebSocket connection error:", error);
@@ -172,7 +174,6 @@ class ApiClient {
     disconnectWebSocket() {
         if (this.stompClient) {
             this.stompClient.disconnect(() => {
-                console.log("WebSocket disconnected.");
                 this.subscriptions.clear();
             });
         }
@@ -185,7 +186,6 @@ class ApiClient {
         }
 
         if (this.subscriptions.has(topic)) {
-            console.log(`Already subscribed to ${topic}.`);
             return;
         }
 
@@ -194,7 +194,6 @@ class ApiClient {
         });
 
         this.subscriptions.set(topic, subscription);
-        console.log(`Subscribed to ${topic}`);
         return topic;
     }
 
@@ -202,7 +201,6 @@ class ApiClient {
         if (this.subscriptions.has(topic)) {
             this.subscriptions.get(topic).unsubscribe();
             this.subscriptions.delete(topic);
-            console.log(`Unsubscribed from ${topic}`);
         }
     }
 

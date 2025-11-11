@@ -198,5 +198,30 @@ public class UsrService {
         }
         usrMapper.bulkUpdateStatus(ids, "DELETED");
     }
+
+    @Transactional
+    public void deleteUsersByAgcId(Long agcId) {
+        if (agcId == null) {
+            return;
+        }
+        usrMapper.bulkUpdateStatusByAgcId(agcId, "DELETED");
+    }
+
+    @Transactional
+    public UsrInfoDTO updateMyName(String loginId, String newName) {
+        Usr user = usrMapper.findByLoginId(loginId)
+                .orElseThrow(() -> new BusinessException(ErrorCodes.USER_NOT_FOUND, loginId));
+
+        if(newName == null || newName.isEmpty()) {
+            newName = user.getName();
+        }
+
+        user.updateInfo(newName, user.getRole(), user.getAgcId());
+
+
+        usrMapper.update(user);
+
+        return convertToInfoDTO(user);
+    }
 }
 
