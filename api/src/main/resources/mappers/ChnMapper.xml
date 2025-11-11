@@ -94,4 +94,10 @@
         <include refid="chnSearchWhereClause"/>
     </select>
 
+    <update id="updateStatus">
+        UPDATE CHN
+        SET STATUS = #{status}
+        WHERE ID = #{id}
+    </update>
+
 </mapper>

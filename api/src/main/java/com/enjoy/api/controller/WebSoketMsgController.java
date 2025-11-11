@@ -30,6 +30,5 @@ public class WebSoketMsgController {
 
         String loginId = principal.getName();
         MsgInfoDTO info = msgService.saveAndSendMessage(chnId, loginId, requestDTO);
-        System.out.println(" info = " + info);
     }
 }

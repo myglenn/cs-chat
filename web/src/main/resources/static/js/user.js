@@ -312,7 +312,6 @@ function openCommonPasswordChangeForUser() {
         
         apiEndpoint: `/admin/users/${user.id}/password`,
         onSuccess: () => {
-            console.log(`User ${user.id}'s password changed.`);
         }
     });
 }
@@ -362,7 +361,7 @@ function openUserModal() {
 
     if (UserState.isEditMode) {
         userIdInput.readOnly = true;
-        form.appendChild(createFormGroup('userId', '사원 아이디(이메일) *', userIdInput, 'userIdError'));
+        form.appendChild(createFormGroup('userId', '사원 아이디 *', userIdInput, 'userIdError'));
     } else {
         const checkIdBtn = document.createElement('button');
         checkIdBtn.type = 'button';
@@ -374,7 +373,7 @@ function openUserModal() {
         userIdWrapper.className = 'form-group-with-button';
         userIdWrapper.append(userIdInput, checkIdBtn);
 
-        form.appendChild(createFormGroup('userId', '사원 아이디(이메일) *', userIdWrapper, 'userIdError'));
+        form.appendChild(createFormGroup('userId', '사원 아이디 *', userIdWrapper, 'userIdError'));
     }
 
     
@@ -621,7 +620,6 @@ function openNewUserModal() {
 
 
 async function editUser(userId) {
-    console.log("Editing user with ID:", userId);
     closeUserModal();
     try {
         
@@ -651,9 +649,58 @@ async function editUser(userId) {
     }
 }
 
+function validateUserForm() {
+    const errors = {};
+    const formData = UserState.formData;
+
+    if (!UserState.isEditMode) {
+        if (!formData.userId || !formData.userId.trim()) {
+            errors.userId = '사원 아이디를 입력하세요';
+        } else if (!UserState.isUserIdChecked) {
+            errors.userId = '아이디 중복확인을 해주세요';
+        } else if (!UserState.isUserIdValid) {
+            errors.userId = '사용할 수 없는 아이디입니다';
+        }
+    }
+
+    if (!formData.name || !formData.name.trim()) {
+        errors.name = '이름을 입력하세요';
+    }
+
+    if (!UserState.isEditMode) {
+        if (!formData.password || !formData.password.trim()) {
+            errors.password = '비밀번호를 입력하세요';
+        } else if (formData.password.length < 6) {
+            errors.password = '비밀번호는 6자 이상이어야 합니다';
+        }
+
+        if (!formData.confirmPassword || !formData.confirmPassword.trim()) {
+            errors.confirmPassword = '비밀번호 확인을 입력하세요';
+        } else if (formData.password !== formData.confirmPassword) {
+            errors.confirmPassword = '비밀번호가 일치하지 않습니다';
+        }
+    }
+
+    UserState.formErrors = errors;
+
+    const allFields = ['userId', 'name', 'password', 'confirmPassword'];
+    allFields.forEach(field => {
+        const errorEl = document.getElementById(`${field}Error`);
+        if (errorEl) {
+            errorEl.textContent = errors[field] || '';
+        }
+    });
+
+    return Object.keys(errors).length === 0;
+}
+
 
 async function saveUser() {
-    
+
+    if (!validateUserForm()) {
+        Toast.error('입력 정보를 확인해주세요');
+        return;
+    }
 
     const formData = UserState.formData;
     let payload;

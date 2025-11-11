@@ -11,8 +11,10 @@
         FROM USR U
                  JOIN
              USR_PW UP ON U.ID = UP.USR_ID
+                 LEFT JOIN
+             AGC A ON U.AGC_ID = A.ID
         WHERE U.LOGIN_ID = #{loginId}
-          AND U.STATUS = 'ACTIVE'
+          AND U.STATUS = 'ACTIVE' AND (U.AGC_ID IS NULL OR A.STATUS = 'ACTIVE')
     </select>
 
     <select id="findById" parameterType="long" resultType="com.enjoy.common.domain.Usr">
@@ -178,6 +180,13 @@
         <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
+    </update>
+
+    <update id="bulkUpdateStatusByAgcId">
+        UPDATE USR
+        SET
+            STATUS = #{status}
+        WHERE AGC_ID = #{agcId}
     </update>
 
 </mapper>

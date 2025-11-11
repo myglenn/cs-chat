@@ -94,6 +94,7 @@ public class AgcService {
                 .orElseThrow(() -> new BusinessException(ErrorCodes.AGENCY_NOT_FOUND, agcId));
         agc.softDelete();
         agcMapper.update(agc);
+        usrService.deleteUsersByAgcId(agcId);
     }
 
 

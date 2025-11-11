@@ -31,8 +31,7 @@ async function loadCommonCodes() {
         codeGroupsToLoad.forEach((groupCode, index) => {
             AppState.commonCodes[groupCode] = results[index] || [];
         });
-
-        console.log("Common codes loaded:", AppState.commonCodes);
+        
 
         window.resolveCodesReady();
 
@@ -63,10 +62,8 @@ async function fetchAndSetCurrentUser() {
     try {
         const userInfo = await apiClient.get('/user/me');
         AppState.currentUser = userInfo;
-        console.log(userInfo);
         const userNameEl = document.getElementById('usrNameDisplay');
         if (userNameEl) userNameEl.textContent = AppState.currentUser.name;
-        console.log("Current user loaded:", AppState.currentUser);
         document.body.setAttribute('data-loading', 'false');
         const mainContent = document.getElementById('mainContent');
         if (mainContent) {
@@ -925,7 +922,6 @@ function showPasswordChangeForm() {
 
 async function saveProfile() {
     const name = document.getElementById('profileName').value;
-    const position = document.getElementById('profilePosition').value;
 
     if (!Validation.required(name)) {
         document.getElementById('profileNameError').textContent = '이름을 입력하세요';
@@ -935,7 +931,7 @@ async function saveProfile() {
     const payload = {name: name};
 
     try {
-        const updatedUser = await apiClient.put(`/user/me`, payload);
+        const updatedUser = await apiClient.put(`/user/me/name`, payload);
         AppState.currentUser = updatedUser;
         document.getElementById('usrNameDisplay').textContent = updatedUser.name;
         Toast.success('정보가 성공적으로 수정되었습니다');

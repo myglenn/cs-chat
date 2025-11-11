@@ -25,4 +25,5 @@ public class ChnInfoDTO extends BaseChnDTO {
     private List<MsgInfoDTO> messages;
     private String lastMessage;
     private LocalDateTime lastMessageTime;
+    private boolean hasAdminMessage = false;
 }

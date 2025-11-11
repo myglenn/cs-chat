@@ -844,7 +844,6 @@ function changeEditingAgencyPassword() {
 
         apiEndpoint: `/admin/agencies/${agency.id}/password`,
         onSuccess: () => {
-            console.log(`Agency ${agency.id}'s password changed.`);
         }
     });
 }

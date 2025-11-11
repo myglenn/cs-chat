@@ -16,4 +16,5 @@ public interface ChnMapper {
     Optional<Chn> findById(Long id);
     List<Chn> findWithPagingAndFilter(ChnSearchCondition condition);
     long countWithFilter(@Param("condition") ChnSearchCondition condition);
+    void updateStatus(@Param("id") Long id, @Param("status") String status);
 }

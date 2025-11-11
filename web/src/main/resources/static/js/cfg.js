@@ -51,6 +51,18 @@ const ICONS = {
             {d: "m22 2-7 20-4-9-9-4Z"},
             {d: "M22 2 11 13"}
         ]
+    },
+    leave: {
+        paths: [
+            {d: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"},
+            {tag: 'polyline', points: "16 17 21 12 16 7"},
+            {tag: 'line', x1: "21", y1: "12", x2: "9", y2: "12"}
+        ]
+    },
+    check: {
+        paths: [
+            {tag: 'polyline', points: "20 6 9 17 4 12"}
+        ]
     }
 };
 ICONS.confirm = ICONS.warning;
