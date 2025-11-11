@@ -41,7 +41,8 @@ class ApiClient {
         const url = `${this.baseURL}${path}`;
         const options = {
             method: method,
-            headers: {}
+            headers: {},
+            credentials: 'include'
         };
         if (this.accessToken) {
             options.headers['Authorization'] = `Bearer ${this.accessToken}`;
@@ -79,7 +80,7 @@ class ApiClient {
 
     async _refreshTokenAndRetry() {
         try {
-            const response = await fetch('/api/auth/reissue', {method: 'POST'});
+            const response = await fetch('/api/auth/reissue', {method: 'POST', credentials: 'include'});
 
             if (!response.ok) {
                 throw new Error('Failed to refresh token');
@@ -91,7 +92,9 @@ class ApiClient {
             return newAccessToken;
 
         } catch (error) {
-            console.error("Could not refresh token:", error);
+            console.error("Could not refresh token (e.g., 7 days expired):", error);
+            this.clearToken();
+            window.location.href = '/login?session=expired';
             return null;
         }
     }
@@ -100,7 +103,8 @@ class ApiClient {
         const url = `${this.baseURL}${path}`;
         const options = {
             method: 'POST',
-            headers: {}
+            headers: {},
+            credentials: 'include'
         };
 
         if (this.accessToken) {
