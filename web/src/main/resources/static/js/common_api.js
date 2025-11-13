@@ -189,8 +189,24 @@ class ApiClient {
                 },
                 (error) => {
                     this.isConnecting = false;
-                    console.error("WebSocket connection error, attempting reconnect...", error);
+                    console.error("WebSocket connection error:", error);
 
+                    let isAuthError = false;
+                    if (typeof error === 'string' && error.includes("Access denied")) {
+                        isAuthError = true;
+                    } else if (error.headers && error.headers.message && error.headers.message.includes("Access denied")) {
+                        isAuthError = true;
+                    }
+
+                    if (isAuthError) {
+                        console.error("WebSocket auth error. Redirecting to login.");
+                        this.clearToken();
+                        window.location.href = '/login?session=expired';
+                        reject(error);
+                        return;
+                    }
+
+                    console.error("WebSocket connection error, attempting reconnect...", error);
                     setTimeout(() => {
                         this.connectWebSocket();
                     }, this.reconnectDelay);

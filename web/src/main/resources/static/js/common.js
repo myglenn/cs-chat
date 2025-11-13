@@ -739,6 +739,8 @@ function openPasswordChangeModal(options) {
 
     closePasswordChangeModal();
 
+    let isCurrentPasswordVerified = false;
+
 
     const modalOverlay = document.createElement('div');
     modalOverlay.id = 'passwordChangeModal';
@@ -773,6 +775,33 @@ function openPasswordChangeModal(options) {
         currentPasswordInput.id = 'currentPassword';
         currentPasswordInput.className = 'form-input';
         currentPasswordInput.placeholder = '현재 비밀번호를 입력하세요';
+
+        currentPasswordInput.addEventListener('focusout', async (e) => {
+            const password = e.target.value;
+            const errorEl = document.getElementById('currentPasswordError');
+            if (!password) {
+                errorEl.textContent = '현재 비밀번호를 입력하세요.';
+                errorEl.style.color = 'var(--destructive)';
+                isCurrentPasswordVerified = false;
+                return;
+            }
+            try {
+                const response = await apiClient.post('/user/me/check-password', { password: password });
+                if (response.isMatch) {
+                    errorEl.textContent = '현재 비밀번호가 일치합니다.';
+                    errorEl.style.color = 'var(--success)';
+                    isCurrentPasswordVerified = true;
+                } else {
+                    errorEl.textContent = '현재 비밀번호가 일치하지 않습니다.';
+                    errorEl.style.color = 'var(--destructive)';
+                    isCurrentPasswordVerified = false;
+                }
+            } catch (error) {
+                errorEl.textContent = '비밀번호 확인 중 오류가 발생했습니다.';
+                errorEl.style.color = 'var(--destructive)';
+                isCurrentPasswordVerified = false;
+            }
+        });
 
 
         form.appendChild(
@@ -820,22 +849,7 @@ function openPasswordChangeModal(options) {
     submitBtn.addEventListener('click', async () => {
         const newPassword = newPasswordInput.value;
         const confirmPassword = confirmPasswordInput.value;
-
-
         let hasError = false;
-        if (!newPassword || newPassword.length < 6) {
-            document.getElementById('newPasswordError').textContent = '비밀번호는 6자 이상이어야 합니다.';
-            hasError = true;
-        } else {
-            document.getElementById('newPasswordError').textContent = '';
-        }
-        if (newPassword !== confirmPassword) {
-            document.getElementById('confirmNewPasswordError').textContent = '비밀번호가 일치하지 않습니다.';
-            hasError = true;
-        } else {
-            document.getElementById('confirmNewPasswordError').textContent = '';
-        }
-
 
         if (requireCurrentPassword) {
             if (!currentPasswordInput.value) {
@@ -845,6 +859,27 @@ function openPasswordChangeModal(options) {
                 document.getElementById('currentPasswordError').textContent = '';
             }
         }
+
+        if (!newPassword) {
+            document.getElementById('newPasswordError').textContent = '새 비밀번호를 입력하세요.'; // (사용자님 제안)
+            hasError = true;
+        } else if (newPassword.length < 6) {
+            document.getElementById('newPasswordError').textContent = '비밀번호는 6자 이상이어야 합니다.';
+            hasError = true;
+        } else {
+            document.getElementById('newPasswordError').textContent = '';
+        }
+
+        if (newPassword && !confirmPassword) {
+            document.getElementById('confirmNewPasswordError').textContent = '새 비밀번호를 다시 입력하세요.';
+            hasError = true;
+        } else if (newPassword.length > 0 && newPassword !== confirmPassword) {
+            document.getElementById('confirmNewPasswordError').textContent = '비밀번호가 일치하지 않습니다.';
+            hasError = true;
+        } else {
+            document.getElementById('confirmNewPasswordError').textContent = '';
+        }
+
 
         if (hasError) return;
 
@@ -864,8 +899,16 @@ function openPasswordChangeModal(options) {
             if (error.status === 401 && requireCurrentPassword) {
                 document.getElementById('currentPasswordError').textContent = '현재 비밀번호가 일치하지 않습니다.';
             }
+            const isPasswordError = error.status === 401 || error.status === 400 || error.status === 403;
+            if (isPasswordError && requireCurrentPassword) {
+                document.getElementById('currentPasswordError').textContent = '현재 비밀번호가 일치하지 않습니다.';
+            }
         }
     });
+
+
+
+
 
     modalFooter.append(cancelBtn, submitBtn);
 

@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +30,42 @@ public class UsrService {
     private final PasswordEncoder passwordEncoder;
     private final CmnSeqService cmnSeqService;
     private final UsrPwLogMapper usrPwLogMapper;
+
+    private static final Pattern LOGIN_ID_PATTERN = Pattern.compile("^[a-z0-9]{6,20}$");
+
+    private void performSafeDelete(Usr userToDelete) {
+        if (userToDelete == null || "SUPER_ADMIN".equals(userToDelete.getRole())) {
+            return;
+        }
+
+        String originalLoginId = userToDelete.getLoginId();
+        String newLoginId = originalLoginId;
+        String newName = "삭제된사용자";
+        String newStatus = "DELETED";
+
+        if (originalLoginId != null && !originalLoginId.startsWith("_deleted_")) {
+            newLoginId = "_deleted_" + userToDelete.getId() + "_" + System.currentTimeMillis();
+        }
+
+        Usr userToUpdate = Usr.builder()
+                .id(userToDelete.getId())
+                .name(newName)
+                .status(newStatus)
+                .loginId(newLoginId)
+                .build();
+
+        usrMapper.updateStatusAndClearInfo(userToUpdate);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean checkMyPassword(String loginId, String passwordToCheck) {
+        try {
+            UsrAccountDTO userAccount = this.findUserAccountByLoginId(loginId);
+            return passwordEncoder.matches(passwordToCheck, userAccount.getPw());
+        } catch (Exception e) {
+            return false;
+        }
+    }
 
     @Transactional(readOnly = true)
     public UsrInfoDTO findMyInfo(String loginId) {
@@ -100,6 +137,14 @@ public class UsrService {
 
 
     private UsrInfoDTO createUserInternal(String loginId, String password, String name, Long agcId, String role) {
+        if (loginId == null || loginId.trim().isEmpty()) {
+            throw new BusinessException(ErrorCodes.INVALID_ARGUMENT, "아이디를 입력하세요.");
+        }
+
+        if (!LOGIN_ID_PATTERN.matcher(loginId).matches()) {
+            throw new BusinessException(ErrorCodes.INVALID_ARGUMENT, "아이디는 6~20자의 영문 소문자, 숫자만 사용 가능합니다.");
+        }
+
         if (usrMapper.existsByLoginId(loginId) > 0) {
             throw new BusinessException(ErrorCodes.DUPLICATE_LOGIN_ID);
         }
@@ -144,6 +189,20 @@ public class UsrService {
         Usr userToUpdate = usrMapper.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCodes.USER_NOT_FOUND, "ID: " + userId));
 
+
+        if ("SUPER_ADMIN".equals(userToUpdate.getRole())) {
+            if (requestDTO.getRole() != null && !requestDTO.getRole().equals("SUPER_ADMIN")) {
+                throw new BusinessException(ErrorCodes.ACCESS_DENIED, "최고 관리자의 권한은 변경할 수 없습니다.");
+            }
+            if (requestDTO.getAgcId() != null && userToUpdate.getAgcId() != requestDTO.getAgcId()) {
+                throw new BusinessException(ErrorCodes.ACCESS_DENIED, "최고 관리자의 소속은 변경할 수 없습니다.");
+            }
+        }
+
+        if ("SUPER_ADMIN".equals(requestDTO.getRole()) && !userToUpdate.getRole().equals("SUPER_ADMIN")) {
+            throw new BusinessException(ErrorCodes.ACCESS_DENIED, "이 API로 최고 관리자 권한을 부여할 수 없습니다.");
+        }
+
         userToUpdate.updateInfo(
                 requestDTO.getName(),
                 requestDTO.getRole(),
@@ -161,8 +220,10 @@ public class UsrService {
     public void deleteUserBySuperAdmin(Long userId) {
         Usr userToDelete = usrMapper.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCodes.USER_NOT_FOUND, "ID: " + userId));
-        userToDelete.softDelete();
-        usrMapper.updateStatusAndClearInfo(userToDelete);
+        if ("SUPER_ADMIN".equals(userToDelete.getRole())) {
+            throw new BusinessException(ErrorCodes.ACCESS_DENIED, "최고 관리자 계정은 삭제할 수 없습니다.");
+        }
+        performSafeDelete(userToDelete);
     }
 
     @Transactional(readOnly = true)
@@ -196,7 +257,10 @@ public class UsrService {
         if (ids == null || ids.isEmpty()) {
             return;
         }
-        usrMapper.bulkUpdateStatus(ids, "DELETED");
+        List<Usr> usersToDelete = usrMapper.findByIds(ids);
+        for (Usr user : usersToDelete) {
+            performSafeDelete(user);
+        }
     }
 
     @Transactional
@@ -204,7 +268,10 @@ public class UsrService {
         if (agcId == null) {
             return;
         }
-        usrMapper.bulkUpdateStatusByAgcId(agcId, "DELETED");
+        List<Usr> usersToDelete = usrMapper.findByAgcId(agcId);
+        for (Usr user : usersToDelete) {
+            performSafeDelete(user);
+        }
     }
 
     @Transactional

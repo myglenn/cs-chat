@@ -24,6 +24,16 @@ public class UsrController {
         return ResponseEntity.ok(myInfo);
     }
 
+    @PostMapping("/me/check-password")
+    public ResponseEntity<Map<String, Boolean>> checkMyPassword(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody Map<String, String> payload) {
+        String loginId = userDetails.getUsername();
+        String password = payload.get("password");
+        boolean isMatch = usrService.checkMyPassword(loginId, password);
+        return ResponseEntity.ok(Map.of("isMatch", isMatch));
+    }
+
     @PutMapping("/me/password")
     public ResponseEntity<Void> updateMyPassword(
             @AuthenticationPrincipal UserDetails userDetails,

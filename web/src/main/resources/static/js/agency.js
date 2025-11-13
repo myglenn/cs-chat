@@ -253,7 +253,16 @@ function renderPagination(pageData) {
 
 
     const handlePageChange = (page) => {
+        AgencyState.selectedAgencies = [];
+
+        const selectAll = document.getElementById('selectAll');
+        const selectAllMobile = document.getElementById('selectAllMobile');
+        if (selectAll) selectAll.checked = false;
+        if (selectAllMobile) selectAllMobile.checked = false;
+
+        updateSelectedCount();
         AgencyState.currentPage = page;
+
         refreshAgencyList();
     };
 
@@ -301,14 +310,16 @@ function toggleSelectAgency(agencyId, checked) {
         }
     } else {
         AgencyState.selectedAgencies = AgencyState.selectedAgencies.filter(id => id !== agencyId);
+        const selectAll = document.getElementById('selectAll');
+        const selectAllMobile = document.getElementById('selectAllMobile');
+        if (selectAll) selectAll.checked = false;
+        if (selectAllMobile) selectAllMobile.checked = false;
     }
     updateSelectedCount();
 }
 
 function toggleSelectAll(checked) {
-    const startIndex = (AgencyState.currentPage - 1) * AgencyState.itemsPerPage;
-    const endIndex = startIndex + AgencyState.itemsPerPage;
-    const currentAgencies = AgencyState.filteredAgencies.slice(startIndex, endIndex);
+    const currentAgencies = AgencyState.filteredAgencies;
 
     if (checked) {
         currentAgencies.forEach(agency => {
@@ -638,6 +649,7 @@ function bulkDeleteAgencies() {
                 await apiClient.post('/admin/agencies/bulk-delete', selectedIds);
 
                 Toast.success(`${selectedIds.length}개의 대리점이 삭제되었습니다`);
+                AgencyState.selectedAgencies = [];
                 await refreshAgencyList();
             } catch (error) {
                 Toast.error("일괄 삭제 중 오류가 발생했습니다.");
@@ -689,10 +701,6 @@ async function checkLoginId() {
             errorEl.textContent = '사용 가능한 아이디입니다';
             errorEl.style.color = 'var(--success)';
             Toast.success('사용 가능한 아이디입니다');
-            setTimeout(() => {
-                errorEl.style.color = '';
-                errorEl.textContent = '';
-            }, 2000);
         }
     } catch (error) {
         Toast.error('중복 확인 중 오류가 발생했습니다.');
@@ -718,6 +726,10 @@ function validateAgencyForm() {
         errors.bizNum = '사업자등록번호를 입력하세요';
     } else if (!bizNumRegex.test(bizNumRaw)) {
         errors.bizNum = '올바른 사업자등록번호 10자리를 입력하세요.';
+    }
+
+    if (!formData.ceo || !formData.ceo.trim()) {
+        errors.ceo = '대표자명을 입력하세요';
     }
 
     if (!formData.loginId || !formData.loginId.trim()) {
@@ -826,7 +838,7 @@ async function submitAgency() {
         }
 
         closeAgencyModal();
-        await fetchAgencies();
+        await refreshAgencyList();
     } catch (e) {
         console.error("Failed to submit agency:", e);
         Toast.error("처리 중 오류가 발생했습니다.");

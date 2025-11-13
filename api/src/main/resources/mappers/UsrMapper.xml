@@ -23,6 +23,15 @@
         WHERE ID = #{id}
     </select>
 
+    <select id="findByIds" resultType="com.enjoy.common.domain.Usr">
+        SELECT *
+        FROM USR
+        WHERE ID IN
+        <foreach item="id" collection="list" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
 
     <select id="countAll" resultType="long">
         SELECT COUNT(*)
@@ -48,7 +57,7 @@
                     AND USR.ROLE = #{condition.role}
                 </when>
                 <otherwise>
-                    AND USR.ROLE IN ('SUPER_ADMIN', 'OPERATOR')
+                    AND USR.ROLE = 'OPERATOR'
                 </otherwise>
             </choose>
             <if test="condition.loginId != null and condition.loginId != ''">
@@ -112,14 +121,21 @@
     <update id="updateStatusAndClearInfo" parameterType="com.enjoy.common.domain.Usr">
         UPDATE USR
         SET STATUS = #{status},
-            NAME   = #{name}
-        WHERE ID = #{id}
+            NAME   = #{name},
+            LOGIN_ID = #{loginId} WHERE ID = #{id}
+                                    AND ROLE != 'SUPER_ADMIN'
     </update>
 
     <select id="findInfoById" resultType="com.enjoy.common.dto.usr.UsrInfoDTO">
-        SELECT ID as id, LOGIN_ID as loginId, NAME as name, ROLE as role, EMAIL as email, AGC_ID as agcId
+        SELECT *
         FROM USR
         WHERE ID = #{id}
+    </select>
+
+    <select id="findByAgcId" parameterType="long" resultType="com.enjoy.common.domain.Usr">
+        SELECT *
+        FROM USR
+        WHERE AGC_ID = #{agcId}
     </select>
 
     <select id="findInfoByIds" resultType="com.enjoy.common.dto.usr.UsrInfoDTO">
@@ -180,6 +196,7 @@
         <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
+        AND ROLE != 'SUPER_ADMIN'
     </update>
 
     <update id="bulkUpdateStatusByAgcId">
