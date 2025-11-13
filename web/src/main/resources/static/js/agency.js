@@ -240,6 +240,11 @@ async function initializeAgencyPage() {
         searchButton.addEventListener('click', handleSearch);
     }
     await refreshAgencyList();
+    document.body.setAttribute('data-loading', 'false');
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) {
+        mainContent.style.display = '';
+    }
 }
 
 

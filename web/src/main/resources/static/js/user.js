@@ -855,6 +855,11 @@ async function initializeUserPage() {
     }
 
     await refreshUserList();
+    document.body.setAttribute('data-loading', 'false');
+    const mainContent = document.getElementById('mainContent');
+    if (mainContent) {
+        mainContent.style.display = '';
+    }
 }
 
 
