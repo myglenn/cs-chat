@@ -2,6 +2,7 @@ package com.enjoy.api.config;
 
 import com.enjoy.api.service.ChnService;
 import com.enjoy.common.dto.chn.ChnBroadcastEvtDTO;
+import com.enjoy.common.dto.chn.ChnStatusUpdateEvtDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
@@ -35,6 +36,28 @@ public class ChnEvtListener {
             });
         } catch (Exception e) {
             log.error("Failed to broadcast WebSocket message for new channel {} after commit.", chnId, e);
+        }
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    public void handleChnStatusUpdateEvent(ChnStatusUpdateEvtDTO event) {
+        Long chnId = event.getChnId();
+
+        try {
+            List<String> participantLoginIds = chnService.findParticipantLoginIdsByChnId(chnId);
+
+            log.info("Broadcasting channel status update {} ({}) to {} participants.",
+                    chnId, event.getStatus(), participantLoginIds.size());
+
+            participantLoginIds.forEach(loginId -> {
+                messagingTemplate.convertAndSend(
+                        "/topic/user/" + loginId,
+                        event
+                );
+            });
+        } catch (Exception e) {
+            log.error("Failed to broadcast WebSocket message for channel status update {} after commit.", chnId, e);
         }
     }
 }

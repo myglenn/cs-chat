@@ -27,14 +27,4 @@ public class Usr {
         this.agcId = agcId;
     }
 
-    public void softDelete() {
-        this.status = "DELETED";
-        this.name = "탈퇴한사용자";
-        this.pw = "deleted_user_password_hash";
-    }
-
-    public void updateNameAndEmail(String name, String email) {
-        this.name = name;
-    }
-
 }

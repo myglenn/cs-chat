@@ -1,6 +1,6 @@
 package com.enjoy.api.service;
 
-import com.enjoy.api.mapper.ChnUsrReadStatusMapper;
+import com.enjoy.api.mapper.ChnAgcReadStatusMapper;
 import com.enjoy.api.mapper.MsgFileMapMapper;
 import com.enjoy.api.mapper.MsgMapper;
 import com.enjoy.api.mapper.UsrMapper;
@@ -20,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.Resource;
-import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -33,6 +32,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+
 @Slf4j
 @Service
 @Transactional
@@ -40,7 +40,8 @@ import java.util.stream.Collectors;
 public class MsgService {
     private final MsgMapper msgMapper;
     private final UsrMapper usrMapper;
-    private final ChnUsrReadStatusMapper chnUsrReadStatusMapper;
+
+    private final ChnAgcReadStatusMapper chnAgcReadStatusMapper;
     private final MsgFileMapMapper msgFileMapMapper;
     private final CmnFileService cmnFileService;
     private final ChnService chnService;
@@ -96,10 +97,8 @@ public class MsgService {
         List<String> participantLoginIds = chnService.findParticipantLoginIdsByChnId(chnId);
 
         eventPublisher.publishEvent(new MsgBroadcastEvtDTO(msgInfo, participantLoginIds));
-
-
-
-        chnUsrReadStatusMapper.upsertReadStatus(msg.getChnId(), msg.getSenderId(), msg.getId());
+        Long senderAgcId = (sender.getAgcId() == null) ? 0L : sender.getAgcId();
+        chnAgcReadStatusMapper.upsertReadStatus(msg.getChnId(), senderAgcId, msg.getId());
         return MsgInfoDTO.builder()
                 .id(msg.getId())
                 .content(msg.getContent())

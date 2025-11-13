@@ -24,7 +24,6 @@ public class MsgEvtListener {
             });
         } catch (Exception e) {
             log.error("Failed to broadcast WebSocket message after commit.", e);
-            // 이 단계의 오류는 롤백되지 않으므로 로깅이 중요합니다.
         }
     }
 }

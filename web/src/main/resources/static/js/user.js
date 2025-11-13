@@ -19,6 +19,23 @@ const UserState = {
     isUserIdChecked: false
 };
 
+function createFormGroupWithErrors(id, label, inputElement, errorId) {
+    const group = document.createElement('div');
+    group.className = 'form-group';
+
+    const labelEl = document.createElement('label');
+    labelEl.className = 'form-label';
+    labelEl.htmlFor = id;
+    labelEl.textContent = label;
+
+    const errorEl = document.createElement('div');
+    errorEl.className = 'error-message';
+    errorEl.id = errorId;
+
+    group.append(labelEl, inputElement, errorEl);
+    return group;
+}
+
 async function fetchUsers() {
     try {
         
@@ -226,6 +243,15 @@ function renderPagination(pageData) {
 
     
     const handlePageChange = (page) => {
+        UserState.selectedUsers = [];
+
+        const selectAll = document.getElementById('selectAll');
+        const selectAllMobile = document.getElementById('selectAllMobile');
+        if (selectAll) selectAll.checked = false;
+        if (selectAllMobile) selectAllMobile.checked = false;
+
+        updateSelectedCount();
+
         UserState.currentPage = page; 
         refreshUserList();           
     };
@@ -278,14 +304,16 @@ function toggleSelectUser(userId, checked) {
         }
     } else {
         UserState.selectedUsers = UserState.selectedUsers.filter(id => id !== userId);
+        const selectAll = document.getElementById('selectAll');
+        const selectAllMobile = document.getElementById('selectAllMobile');
+        if (selectAll) selectAll.checked = false;
+        if (selectAllMobile) selectAllMobile.checked = false;
     }
     updateSelectedCount();
 }
 
 function toggleSelectAll(checked) {
-    const startIndex = (UserState.currentPage - 1) * UserState.itemsPerPage;
-    const endIndex = startIndex + UserState.itemsPerPage;
-    const currentUsers = UserState.filteredUsers.slice(startIndex, endIndex);
+    const currentUsers = UserState.filteredUsers;
 
     if (checked) {
         currentUsers.forEach(user => {
@@ -317,7 +345,6 @@ function openCommonPasswordChangeForUser() {
 }
 
 function openUserModal() {
-    const currentUserRole = AppState.currentUser.role;
     const modalTitleText = UserState.isEditMode ? '사원 수정' : '사원 등록';
     const formData = UserState.formData;
 
@@ -361,7 +388,7 @@ function openUserModal() {
 
     if (UserState.isEditMode) {
         userIdInput.readOnly = true;
-        form.appendChild(createFormGroup('userId', '사원 아이디 *', userIdInput, 'userIdError'));
+        form.appendChild(createFormGroupWithErrors('userId', '사원 아이디 *', userIdInput, 'userIdError'));
     } else {
         const checkIdBtn = document.createElement('button');
         checkIdBtn.type = 'button';
@@ -373,7 +400,7 @@ function openUserModal() {
         userIdWrapper.className = 'form-group-with-button';
         userIdWrapper.append(userIdInput, checkIdBtn);
 
-        form.appendChild(createFormGroup('userId', '사원 아이디 *', userIdWrapper, 'userIdError'));
+        form.appendChild(createFormGroupWithErrors('userId', '사원 아이디 *', userIdWrapper, 'userIdError'));
     }
 
     
@@ -386,7 +413,7 @@ function openUserModal() {
     nameInput.addEventListener('change', (e) => updateFormField('name', e.target.value));
 
     form.append(
-        createFormGroup('name', '이름 *', nameInput, 'nameError')
+        createFormGroupWithErrors('name', '이름 *', nameInput, 'nameError')
     );
 
 
@@ -397,7 +424,7 @@ function openUserModal() {
         changePwdBtn.className = 'btn btn-outline w-full';
         changePwdBtn.textContent = '비밀번호 변경';
         changePwdBtn.addEventListener('click', openCommonPasswordChangeForUser);
-        form.appendChild(createFormGroup('password', '비밀번호', changePwdBtn));
+        form.appendChild(createFormGroupWithErrors('password', '비밀번호', changePwdBtn));
     } else {
         const passwordInput = document.createElement('input');
         passwordInput.type = 'password';
@@ -414,8 +441,8 @@ function openUserModal() {
         confirmPasswordInput.addEventListener('change', (e) => updateFormField('confirmPassword', e.target.value));
 
         form.append(
-            createFormGroup('password', '비밀번호 *', passwordInput, 'passwordError'),
-            createFormGroup('confirmPassword', '비밀번호 확인 *', confirmPasswordInput, 'confirmPasswordError')
+            createFormGroupWithErrors('password', '비밀번호 *', passwordInput, 'passwordError'),
+            createFormGroupWithErrors('confirmPassword', '비밀번호 확인 *', confirmPasswordInput, 'confirmPasswordError')
         );
     }
 
@@ -581,6 +608,7 @@ function closeAgencySearchModal() {
 
 
 function bulkDeleteUsers() {
+    const selectedIds = UserState.selectedUsers;
     if (UserState.selectedUsers.length === 0) {
         Toast.warning('선택된 사원이 없습니다');
         return;
@@ -589,7 +617,7 @@ function bulkDeleteUsers() {
     CustomAlert.confirm(
         `${selectedIds.length}개 항목 삭제`,
         `선택한 ${selectedIds.length}명의 사원을 삭제하시겠습니까?`,
-        async () => { // <-- async 키워드 추가
+        async () => {
             try {
                 await apiClient.post('/admin/users/bulk-delete', selectedIds);
                 Toast.success(`${selectedIds.length}명의 사원이 삭제되었습니다`);
@@ -605,7 +633,6 @@ function bulkDeleteUsers() {
 function changeItemsPerPage(value) {
     UserState.itemsPerPage = parseInt(value);
     UserState.currentPage = 1;
-    // renderUsers();
     refreshUserList();
 }
 
@@ -722,7 +749,11 @@ async function saveUser() {
             await apiClient.post('/admin/users', payload);
             Toast.success('사원이 등록되었습니다.');
         }
-        closeUserModal();
+        try {
+            closeUserModal();
+        } catch (closeError) {
+            console.error("모달 닫기 실패:", closeError);
+        }
         await refreshUserList();
 
     } catch (error) {
@@ -765,7 +796,6 @@ async function checkUserId() {
             errorEl.textContent = '사용 가능한 아이디입니다';
             errorEl.style.color = 'var(--success)';
             UserState.isUserIdValid = true;
-            setTimeout(() => { errorEl.style.color = ''; errorEl.textContent = ''; }, 2000);
         }
     } catch (error) {
         Toast.error('중복 확인 중 오류가 발생했습니다.');
@@ -802,6 +832,11 @@ function updateFormField(field, value) {
     if (field === 'userId' && !UserState.isEditMode) {
         UserState.isUserIdChecked = false;
         UserState.isUserIdValid = false;
+        const errorEl = document.getElementById('userIdError');
+        if (errorEl) {
+            errorEl.textContent = '';
+            errorEl.style.color = '';
+        }
     }
 }
 

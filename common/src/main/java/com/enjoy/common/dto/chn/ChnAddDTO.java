@@ -14,5 +14,5 @@ import java.util.List;
 public class ChnAddDTO extends BaseChnDTO {
     private List<Long> agcIds;
     private String content;
-
+    private List<Long> fileIds;
 }

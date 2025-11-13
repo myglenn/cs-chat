@@ -175,22 +175,38 @@ class ApiClient {
             }
 
             this.stompClient.connect(headers,
-                () => { // onConnect (연결 성공)
+                () => {
                     this.isConnecting = false;
                     console.log("WebSocket connected.");
                     this.subscriptions.forEach((subInfo, topic) => {
                         const newSubscription = this.stompClient.subscribe(topic, (message) => {
                             subInfo.callback(JSON.parse(message.body));
                         });
-                        subInfo.subscription = newSubscription; // 새 구독 정보로 갱신
+                        subInfo.subscription = newSubscription;
                     });
 
                     resolve();
                 },
                 (error) => {
                     this.isConnecting = false;
-                    console.error("WebSocket connection error, attempting reconnect...", error);
+                    console.error("WebSocket connection error:", error);
 
+                    let isAuthError = false;
+                    if (typeof error === 'string' && error.includes("Access denied")) {
+                        isAuthError = true;
+                    } else if (error.headers && error.headers.message && error.headers.message.includes("Access denied")) {
+                        isAuthError = true;
+                    }
+
+                    if (isAuthError) {
+                        console.error("WebSocket auth error. Redirecting to login.");
+                        this.clearToken();
+                        window.location.href = '/login?session=expired';
+                        reject(error);
+                        return;
+                    }
+
+                    console.error("WebSocket connection error, attempting reconnect...", error);
                     setTimeout(() => {
                         this.connectWebSocket();
                     }, this.reconnectDelay);

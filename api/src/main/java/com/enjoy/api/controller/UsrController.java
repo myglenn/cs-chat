@@ -24,6 +24,16 @@ public class UsrController {
         return ResponseEntity.ok(myInfo);
     }
 
+    @PostMapping("/me/check-password")
+    public ResponseEntity<Map<String, Boolean>> checkMyPassword(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody Map<String, String> payload) {
+        String loginId = userDetails.getUsername();
+        String password = payload.get("password");
+        boolean isMatch = usrService.checkMyPassword(loginId, password);
+        return ResponseEntity.ok(Map.of("isMatch", isMatch));
+    }
+
     @PutMapping("/me/password")
     public ResponseEntity<Void> updateMyPassword(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -41,10 +51,10 @@ public class UsrController {
     @PutMapping("/me/name")
     public ResponseEntity<UsrInfoDTO> updateMyName(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody Map<String, String> payload) { // { "name": "새이름" }
+            @RequestBody Map<String, String> payload) {
 
         String loginId = userDetails.getUsername();
-        String newName = payload.get("name"); // "name" 키로 새 이름을 받음
+        String newName = payload.get("name");
 
         UsrInfoDTO updatedUser = usrService.updateMyName(loginId, newName);
 
