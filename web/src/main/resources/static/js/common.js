@@ -64,11 +64,6 @@ async function fetchAndSetCurrentUser() {
         AppState.currentUser = userInfo;
         const userNameEl = document.getElementById('usrNameDisplay');
         if (userNameEl) userNameEl.textContent = AppState.currentUser.name;
-        document.body.setAttribute('data-loading', 'false');
-        const mainContent = document.getElementById('mainContent');
-        if (mainContent) {
-            mainContent.style.display = '';
-        }
         window.resolveAuthReady();
     } catch (error) {
         console.error("Failed to fetch current user info:", error);
