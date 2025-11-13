@@ -1008,7 +1008,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const iconMap = [
             { id: 'searchButton', type: 'search', size: 18 },
             { selector: '#searchWrapper', type: 'search', size: 16, prepend: true, className: 'search-icon' },
-            { id: 'openAgencyModalBtn', type: 'plus', size: 16, prepend: true }, // "등록" 버튼
+            { id: 'openAgencyModalBtn', type: 'plus', size: 16, prepend: true },
             { id: 'fabButton', type: 'plus', size: 24 },
             { selector: '[data-action="openAgencyModal"]', type: 'building', size: 20, prepend: true },
             { selector: '[onclick="closeBulkActionModal()"]', type: 'close', size: 16 },

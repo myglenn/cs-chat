@@ -175,14 +175,14 @@ class ApiClient {
             }
 
             this.stompClient.connect(headers,
-                () => { // onConnect (연결 성공)
+                () => {
                     this.isConnecting = false;
                     console.log("WebSocket connected.");
                     this.subscriptions.forEach((subInfo, topic) => {
                         const newSubscription = this.stompClient.subscribe(topic, (message) => {
                             subInfo.callback(JSON.parse(message.body));
                         });
-                        subInfo.subscription = newSubscription; // 새 구독 정보로 갱신
+                        subInfo.subscription = newSubscription;
                     });
 
                     resolve();

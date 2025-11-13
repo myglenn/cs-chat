@@ -83,14 +83,9 @@ public class ChnAgcController {
     }
     @PostMapping("/{chnId}/read")
     public ResponseEntity<Void> markChannelAsRead(
-            @PathVariable Long chnId,
-            Principal principal) {
+            @PathVariable Long chnId) {
 
-        String loginId = principal.getName();
-        UsrAccountDTO user = usrService.findUserAccountByLoginId(loginId);
-        Long currentUserId = user.getId();
-
-        chnService.markChannelAsRead(chnId, currentUserId);
+        chnService.markChannelAsRead(chnId);
 
         return ResponseEntity.ok().build();
     }

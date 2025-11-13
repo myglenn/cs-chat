@@ -67,12 +67,15 @@
                 </choose>
             </if>
             <if test="category != null and category.size() > 0">
-                AND C.CATEGORY IN
+                AND (
+                (C.TYPE = 'CON' AND C.CATEGORY IN
                 <foreach item="cat" collection="category" open="(" separator="," close=")">
                     #{cat}
                 </foreach>
+                )
+                OR C.TYPE = 'DM'
+                )
             </if>
-
             <if test="keyword != null and keyword != ''">
                 AND C.ID IN (
                 SELECT cam.CHN_ID

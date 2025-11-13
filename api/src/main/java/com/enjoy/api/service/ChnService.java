@@ -8,17 +8,12 @@ import com.enjoy.common.domain.Usr;
 import com.enjoy.common.dto.agc.AgcInfoDTO;
 import com.enjoy.common.dto.chn.*;
 import com.enjoy.common.dto.msg.MsgInfoDTO;
-import com.enjoy.common.dto.msg.MsgSendDTO;
 import com.enjoy.common.dto.usr.UsrInfoDTO;
 import com.enjoy.common.exception.BusinessException;
 import com.enjoy.common.exception.ErrorCodes;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -41,8 +36,8 @@ public class ChnService {
     private final ChnMapper chnMapper;
     private final ChnAgcMapMapper chnAgcMapMapper;
     private final ChnLogMapper chnLogMapper;
+    public final ChnAgcReadStatusMapper chnAgcReadStatusMapper;
     private final UsrMapper usrMapper;
-    private final ChnUsrReadStatusMapper chnUsrReadStatusMapper;
     private final CmnSeqService cmnSeqService;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -72,6 +67,11 @@ public class ChnService {
         ChnLog log = ChnLog.builder().id(chnLogId).chnId(chnId).usrId(resolverId)
                 .oldStatus(oldStatus).newStatus(chn.getStatus()).build();
         chnLogMapper.insert(log);
+        eventPublisher.publishEvent(new ChnStatusUpdateEvtDTO(
+                chnId,
+                chn.getStatus(),
+                chn.getCategory()
+        ));
     }
 
     public List<String> findParticipantLoginIdsByChnId(Long chnId) {
@@ -141,15 +141,15 @@ public class ChnService {
     }
 
     @Transactional
-    public void markChannelAsRead(Long chnId, Long userId) {
-        Long lastMsgId = chnUsrReadStatusMapper.findLastMsgIdByChnId(chnId);
-        if (lastMsgId != null) {
-            chnUsrReadStatusMapper.upsertReadStatus(chnId, userId, lastMsgId);
-        }
+    public void markChannelAsRead(Long chnId) {
+        Long currentAgcId = getCurrentUserAgcId();
+        Long lastMsgId = chnAgcReadStatusMapper.findLastMsgIdByChnId(chnId);
+        chnAgcReadStatusMapper.upsertReadStatus(chnId, currentAgcId, lastMsgId);
     }
 
     public void updateChannelStatus(Long chnId, String status) {
         chnMapper.updateStatus(chnId, status);
+        eventPublisher.publishEvent(new ChnStatusUpdateEvtDTO(chnId, status));
     }
 
 
@@ -181,14 +181,14 @@ public class ChnService {
     }
 
     private List<ChnInfoDTO> findChannelsInternal(ChnSearchCondition condition) {
-        Long currentUserId = getCurrentUserId();
+        Long currentAgcId = getCurrentUserAgcId();
         List<Chn> chnList = chnMapper.findWithPagingAndFilter(condition);
 
         if (chnList.isEmpty()) { return Collections.emptyList(); }
 
         Set<Long> chnIds = chnList.stream().map(Chn::getId).collect(Collectors.toSet());
 
-        List<Map<String, Object>> readStatusList = chnUsrReadStatusMapper.findLastReadMsgIdsByUser(currentUserId, chnIds);
+        List<Map<String, Object>> readStatusList = chnAgcReadStatusMapper.findLastReadMsgIdsByAgc(currentAgcId, chnIds);
 
         Map<Long, Long> lastReadMap;
         if (readStatusList != null) {
@@ -213,9 +213,9 @@ public class ChnService {
 
                             long count;
                             if (lastReadMsgId == null) {
-                                count = chnUsrReadStatusMapper.countUnreadMessages(currentChnId, 0L);
+                                count = chnAgcReadStatusMapper.countUnreadMessages(currentChnId, 0L);
                             } else if (channelLastMsgId != null && lastReadMsgId < channelLastMsgId) {
-                                count = chnUsrReadStatusMapper.countUnreadMessages(currentChnId, lastReadMsgId);
+                                count = chnAgcReadStatusMapper.countUnreadMessages(currentChnId, lastReadMsgId);
                             } else {
                                 count = 0L;
                             }
@@ -300,7 +300,7 @@ public class ChnService {
                 .build();
     }
 
-    private Long getCurrentUserId() {
+    private Long getCurrentUserAgcId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication != null && authentication.isAuthenticated()) {
@@ -321,9 +321,12 @@ public class ChnService {
 
             Usr currentUser = usrMapper.findByLoginId(loginId)
                     .orElseThrow(() -> new BusinessException(ErrorCodes.USER_NOT_FOUND, loginId));
-            return currentUser.getId();
+            Long agcId = currentUser.getAgcId();
+
+            return (agcId == null) ? 0L : agcId;
         }
 
         throw new BusinessException(ErrorCodes.ACCESS_DENIED);
     }
+
 }

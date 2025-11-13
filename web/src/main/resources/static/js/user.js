@@ -589,7 +589,7 @@ function bulkDeleteUsers() {
     CustomAlert.confirm(
         `${selectedIds.length}개 항목 삭제`,
         `선택한 ${selectedIds.length}명의 사원을 삭제하시겠습니까?`,
-        async () => { // <-- async 키워드 추가
+        async () => {
             try {
                 await apiClient.post('/admin/users/bulk-delete', selectedIds);
                 Toast.success(`${selectedIds.length}명의 사원이 삭제되었습니다`);
@@ -605,7 +605,6 @@ function bulkDeleteUsers() {
 function changeItemsPerPage(value) {
     UserState.itemsPerPage = parseInt(value);
     UserState.currentPage = 1;
-    // renderUsers();
     refreshUserList();
 }
 

@@ -189,4 +189,13 @@
         WHERE AGC_ID = #{agcId}
     </update>
 
+    <select id="findUserIdsByRoles" parameterType="list" resultType="long">
+        SELECT ID
+        FROM USR
+        WHERE ROLE IN
+        <foreach item="role" collection="list" open="(" separator="," close=")">
+            #{role}
+        </foreach>
+    </select>
+
 </mapper>

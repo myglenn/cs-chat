@@ -41,10 +41,10 @@ public class UsrController {
     @PutMapping("/me/name")
     public ResponseEntity<UsrInfoDTO> updateMyName(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody Map<String, String> payload) { // { "name": "새이름" }
+            @RequestBody Map<String, String> payload) {
 
         String loginId = userDetails.getUsername();
-        String newName = payload.get("name"); // "name" 키로 새 이름을 받음
+        String newName = payload.get("name");
 
         UsrInfoDTO updatedUser = usrService.updateMyName(loginId, newName);
 

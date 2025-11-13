@@ -138,6 +138,7 @@ async function openDmModal() {
 
     const modalContent = document.createElement('div');
     modalContent.className = 'modal-content';
+    modalContent.style.height = '75svh';
 
 
     const closeBtn = createElementSafe('button', {
@@ -184,7 +185,7 @@ async function openDmModal() {
         className: 'checkbox-label',
         attributes: {
             for: 'dmSelectAllCheckbox',
-            style: 'padding: 0.5rem; font-weight: 500; border-bottom: 1px solid var(--border);' // 목록과 구분선
+            style: 'padding: 0.5rem; font-weight: 500; border-bottom: 1px solid var(--border);'
         },
         children: [
             selectAllCheckbox,
@@ -296,7 +297,7 @@ async function openDmModal() {
 
     const getFilteredAgencies = () => {
         const searchTerm = agencySearchInput.value.toLowerCase();
-        if (!searchTerm) return allAgencies; // 검색어가 없으면 전체 반환
+        if (!searchTerm) return allAgencies;
         return allAgencies.filter(agency =>
             agency.name.toLowerCase().includes(searchTerm)
         );
@@ -644,9 +645,20 @@ function renderConsultationList() {
                 }
             }
 
-            let line1Left, line2Text;
+            let line1Left;
+            let line2Element = null;
+            let line3Element = null;
 
             const isClosedTab = ConsultationState.statusFilter === 'CLOSED';
+
+            let lastMessagePreview = consultation.lastMessage;
+            if (!lastMessagePreview) {
+                if (consultation.lastMessageTime) {
+                    lastMessagePreview = '파일을 보냈습니다.';
+                } else {
+                    lastMessagePreview = consultation.type === 'CON' ? '새 상담이 등록되었습니다.' : '메시지가 없습니다.';
+                }
+            }
 
             if (consultation.type === 'DM') {
                 const categoryName = getCodeName('CHN_CATEGORY', consultation.category);
@@ -664,8 +676,10 @@ function renderConsultationList() {
                 } else {
                     line1Left = createElementSafe('h3', {className: 'chat-item-title', text: consultation.title});
                 }
-                line2Text = createElementSafe('p', {className: 'chat-item-preview', text: previewText});
-
+                line2Element = createElementSafe('p', {
+                    className: 'chat-item-preview',
+                    text: lastMessagePreview
+                });
             } else {
                 line1Left = createElementSafe('h3', {
                     className: 'chat-item-title',
@@ -677,7 +691,7 @@ function renderConsultationList() {
                         })
                     ]
                 });
-                line2Text = createElementSafe('p', {
+                line2Element = createElementSafe('p', {
                     className: 'chat-item-preview',
                     children: [
                         createElementSafe('span', {
@@ -687,18 +701,23 @@ function renderConsultationList() {
                         createElementSafe('span', { text: consultation.title })
                     ]
                 });
+                line3Element = createElementSafe('p', {
+                    className: 'chat-item-preview',
+                    text: lastMessagePreview
+                });
             }
             const content = createElementSafe('div', {
                 className: 'chat-item-content',
                 children: [
-                    createElementSafe('div', { // Header (Line 1)
+                    createElementSafe('div', {
                         className: 'chat-item-header',
                         children: [
                             line1Left,
                             createElementSafe('span', {className: 'chat-item-time', text: timeText})
                         ]
                     }),
-                    line2Text
+                    line2Element,
+                    line3Element
                 ]
             });
 
@@ -861,11 +880,14 @@ async function submitConsultation() {
 
     try {
 
-        await apiClient.post('/agency/channels', payload);
+        const newChannel = await apiClient.post('/agency/channels', payload);
 
         Toast.success('상담이 발송되었습니다');
         closeConsultationModal();
+
         await refreshConsultationList();
+
+        selectConsultation(newChannel.id, false);
 
     } catch (error) {
         console.error("Error caught in submitConsultation:", error);
@@ -900,54 +922,6 @@ async function submitDm(agencyIdSet) {
         Toast.error('DM 발송에 실패했습니다.');
     }
 }
-
-
-// async function submitComplete(event) {
-//     event.preventDefault();
-//
-//     const category = document.getElementById('completeCategory').value;
-//     const memo = document.getElementById('completeMemo').value.trim();
-//
-//     if (!category) {
-//         document.getElementById('completeCategoryError').textContent = '카테고리를 선택하세요';
-//         return;
-//     }
-//
-//     if (!ConsultationState.currentConsultation) {
-//         Toast.error("선택된 상담이 없습니다.");
-//         return;
-//     }
-//
-//     const consultationId = ConsultationState.currentConsultation.id;
-//
-//
-//     const payload = {
-//         category: category,
-//         memo: memo
-//
-//     };
-//
-//     try {
-//
-//
-//         await apiClient.put(`/admin/channels/${consultationId}/close`, payload);
-//
-//         Toast.success('상담이 완료되었습니다');
-//         closeCompleteModal();
-//
-//
-//         const consultation = ConsultationState.consultations.find(c => c.id === consultationId);
-//         if (consultation) {
-//             consultation.status = 'CLOSED';
-//         }
-//         ConsultationState.currentConsultation.status = 'CLOSED';
-//         selectConsultation(consultationId);
-//         renderConsultationList();
-//
-//     } catch (error) {
-//         Toast.error("상담 완료 처리에 실패했습니다.");
-//     }
-// }
 
 function clearChatInputAndFiles() {
     const input = document.getElementById('messageInput');
@@ -993,7 +967,7 @@ async function sendChatMessage() {
                 name: f.name,
                 type: f.type,
                 size: f.size,
-                downloadUrl: `/api/msg/files/download/${f.id}`
+                downloadUrl: f.localUrl || `/api/msg/files/download/${f.id}`
             }))
         };
 
@@ -1022,7 +996,6 @@ async function sendChatMessage() {
                     downloadUrl: `/api/msg/files/download/${f.id}`
                 }))
             };
-            onGlobalUpdate(localMessage);
         } else {
             const channelId = ConsultationState.currentConsultation.id;
             const payload = {
@@ -1034,7 +1007,6 @@ async function sendChatMessage() {
 
 
         input.value = '';
-        input.blur();
         ConsultationState.attachedFiles = [];
         const attachedFilesContainer = document.getElementById('attachedFilesContainer');
         if (attachedFilesContainer) {
@@ -1134,6 +1106,17 @@ function renderChatHeader(consultation) {
 
     titleEl.textContent = headerTitle;
 
+    if (consultation.status === 'CLOSED') {
+        const categoryName = getCodeName('CHN_CATEGORY', consultation.category);
+        subtitleEl.textContent = `완료됨 (${categoryName})`;
+        subtitleEl.style.color = 'var(--muted-foreground)';
+    } else if (consultation.status === 'WITHDRAWN') {
+        subtitleEl.textContent = '철회됨';
+        subtitleEl.style.color = 'var(--muted-foreground)';
+    } else {
+        // subtitleEl.textContent = ''; // 기존 로직이 있다면 유지
+    }
+
     subtitleEl.textContent = '';
     previewEl.textContent = '';
 }
@@ -1143,6 +1126,7 @@ function renderMessages(messages, unreadCountToScroll = 0) {
     if (!messagesContainer) return;
 
     messagesContainer.innerHTML = '';
+    const imageLoadPromises = [];
 
     if (!messages || messages.length === 0) {
         messagesContainer.appendChild(
@@ -1264,6 +1248,11 @@ function renderMessages(messages, unreadCountToScroll = 0) {
                         }
                     });
                     img.onclick = () => openImageModal(file.downloadUrl, file.name);
+                    const loadPromise = new Promise((resolve) => {
+                        img.onload = () => resolve();
+                        img.onerror = () => resolve();
+                    });
+                    imageLoadPromises.push(loadPromise);
 
                     fileElements.push(createElementSafe('div', {
                         className: 'message-file-item message-file-image',
@@ -1359,15 +1348,17 @@ function renderMessages(messages, unreadCountToScroll = 0) {
         }
         messagesContainer.appendChild(messageEl);
     }
-    setTimeout(() => {
-        const firstUnreadElement = document.getElementById('firstUnreadMessage');
+    Promise.all(imageLoadPromises).then(() => {
+        setTimeout(() => {
+            const firstUnreadElement = document.getElementById('firstUnreadMessage');
 
-        if (firstUnreadElement) {
-            firstUnreadElement.scrollIntoView({behavior: 'auto', block: 'start'});
-        } else {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
-    }, 0);
+            if (firstUnreadElement) {
+                firstUnreadElement.scrollIntoView({behavior: 'auto', block: 'start'});
+            } else {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        }, 0);
+    });
 }
 
 function toggleNoticeCard() {
@@ -1459,23 +1450,40 @@ function onGlobalUpdate(updateData) {
     let newChannelData = null;
 
     if (updateData.content !== undefined && updateData.chnId !== undefined) {
-
         chnId = updateData.chnId;
     } else if (updateData.id !== undefined && updateData.title !== undefined) {
-
         chnId = updateData.id;
         isNewChannel = true;
         newChannelData = updateData;
+    } else if (updateData.status !== undefined && updateData.chnId !== undefined) {
+        chnId = updateData.chnId;
+        const changedStatus = updateData.status;
+
+        let previewItem = ConsultationState.consultations.find(c => String(c.id) === String(chnId));
+        if (previewItem) {
+            previewItem.status = changedStatus;
+            previewItem.category = updateData.category || previewItem.category;
+        }
+
+        if (ConsultationState.currentConsultation && String(ConsultationState.currentConsultation.id) === String(chnId)) {
+            ConsultationState.currentConsultation.status = changedStatus;
+            ConsultationState.currentConsultation.category = updateData.category || ConsultationState.currentConsultation.category;
+
+            document.getElementById('chatInputContainer').style.display = 'none';
+            document.getElementById('completeBtn').style.display = 'none';
+            document.getElementById('leaveBtn').style.display = 'none';
+
+            renderChatHeader(ConsultationState.currentConsultation);
+        }
+        refreshConsultationList();
+
+        return;
     } else {
         return;
     }
 
     const isMyMessage = updateData.sender && String(updateData.sender.id) === String(AppState.currentUser.id);
     const isViewing = ConsultationState.currentConsultation && String(ConsultationState.currentConsultation.id) === String(chnId);
-
-    if (isMyMessage && isViewing) {
-        return;
-    }
 
     let previewItem = ConsultationState.consultations.find(c => String(c.id) === String(chnId));
     if (isNewChannel && !previewItem) {
@@ -1507,8 +1515,17 @@ function onGlobalUpdate(updateData) {
         previewItem.lastMessageTime = updateData.regDt;
 
 
+        if (!previewItem.lastMessage && previewItem.lastMessageTime) {
+            previewItem.lastMessage = '파일을 보냈습니다.';
+        }
+
         if (!isMyMessage && !isViewing) {
             previewItem.unreadCount = (previewItem.unreadCount || 0) + 1;
+        }
+
+        if (!isMyMessage && isViewing) {
+            ConsultationState.currentConsultation.messages.push(updateData);
+            renderMessages(ConsultationState.currentConsultation.messages);
         }
 
 
@@ -1539,8 +1556,6 @@ function onGlobalUpdate(updateData) {
                     console.error("Auto-read status update failed:", err);
                 });
             }
-            ConsultationState.currentConsultation.messages.push(updateData);
-            renderMessages(ConsultationState.currentConsultation.messages);
         }
     }
     ConsultationState.consultations.sort((a, b) => {
@@ -1884,14 +1899,6 @@ async function submitComplete(selectedCategory) {
     try {
         await apiClient.put(`/admin/channels/${consultationId}/close`, payload);
         Toast.success('상담이 완료되었습니다');
-        // // closeCompleteModal(); // 이미 2단계에서 모달을 닫음
-        // const consultation = ConsultationState.consultations.find(c => c.id === consultationId);
-        // if (consultation) {
-        //     consultation.status = 'CLOSED';
-        // }
-        // ConsultationState.currentConsultation.status = 'CLOSED';
-        // selectConsultation(consultationId, false);
-        // renderConsultationList();
         clearChatView();
         await refreshConsultationList();
 
@@ -1912,7 +1919,7 @@ function openCompleteModal() {
     });
     const modalContent = createElementSafe('div', {
         className: 'modal-content',
-        attributes: {style: 'max-width: 25rem;'} // 모달 너비 조절
+        attributes: {style: 'max-width: 25rem;'}
     });
     const closeBtn = createElementSafe('button', {
         className: 'modal-close',
@@ -2043,9 +2050,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (btn) {
                 const icon = Icon({ type: item.type, size: item.size });
                 if (item.prepend) {
-                    btn.prepend(icon); // 텍스트 앞에 아이콘 삽입
+                    btn.prepend(icon);
                 } else {
-                    btn.appendChild(icon); // 버튼에 아이콘 삽입
+                    btn.appendChild(icon);
                 }
             }
         });
@@ -2080,10 +2087,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     let initialConsultationId = null;
     if (window.location.hash.startsWith('#chat=')) {
         const id = window.location.hash.split('=')[1];
-        if (id) {
+        if (id && id !== 'new') {
             initialConsultationId = id;
             const state = {consultationId: id};
             history.replaceState(state, '', `#chat=${id}`);
+        } else {
+            history.replaceState(null, '', window.location.pathname + window.location.search);
         }
     } else {
         history.replaceState(null, '', window.location.pathname + window.location.search);
@@ -2113,7 +2122,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         newTitle.style.fontWeight = '500';
         newTitle.style.display = 'flex';
         newTitle.style.alignItems = 'center';
-        // newTitle.style.marginLeft = 'auto';
         if (createChatBtn) {
             createChatBtn.parentNode.insertBefore(newTitle, createChatBtn);
             createChatBtn.style.marginLeft = 'auto';
@@ -2270,16 +2278,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                     previewElement.classList.add('uploading');
                     const uploadResponse = await apiClient.postMultipart('/msg/files/upload', formData);
                     const uploadedFileId = uploadResponse.fileId;
+                    const localUrl = (file.type.startsWith('image/')) ? URL.createObjectURL(file) : null;
                     previewElement.classList.remove('uploading');
                     previewElement.classList.add('uploaded');
 
-                    previewElement.dataset.fileId = uploadedFileId;
                     ConsultationState.attachedFiles.push({
                         id: uploadedFileId,
                         name: file.name,
                         type: file.type,
                         size: file.size,
-
+                        localUrl: localUrl
                     });
 
                     const removeBtn = previewElement.querySelector('.remove-file-btn');

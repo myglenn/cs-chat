@@ -38,11 +38,23 @@ public class ChnAdmController {
             @RequestBody ChnAddDTO requestDTO) {
 
         ChnInfoDTO createdChannel = chnService.createChannelByAdmin(userDetails.getUsername(), requestDTO);
+
+        boolean hasContent = requestDTO.getContent() != null && !requestDTO.getContent().trim().isEmpty();
+        boolean hasFiles = requestDTO.getFileIds() != null && !requestDTO.getFileIds().isEmpty();
+
+
+        if (hasContent || hasFiles) {
+            MsgSendDTO firstMessageDTO = new MsgSendDTO();
+            firstMessageDTO.setContent(requestDTO.getContent());
+            firstMessageDTO.setFileIds(requestDTO.getFileIds());
+
+            msgService.saveAndSendMessage(createdChannel.getId(), userDetails.getUsername(), firstMessageDTO);
+        }
+
+
         if (requestDTO.getContent() != null && !requestDTO.getContent().trim().isEmpty()) {
             MsgSendDTO firstMessageDTO = new MsgSendDTO();
             firstMessageDTO.setContent(requestDTO.getContent());
-
-
 
 
             msgService.saveAndSendMessage(createdChannel.getId(), userDetails.getUsername(), firstMessageDTO);
@@ -78,12 +90,8 @@ public class ChnAdmController {
 
     @PostMapping("/{chnId}/read")
     public ResponseEntity<Void> markChannelAsRead(
-            @PathVariable Long chnId,
-            Principal principal) {
-        String loginId = principal.getName();
-        UsrAccountDTO user = usrService.findUserAccountByLoginId(loginId);
-        Long currentUserId = user.getId();
-        chnService.markChannelAsRead(chnId, currentUserId);
+            @PathVariable Long chnId) {
+        chnService.markChannelAsRead(chnId);
 
         return ResponseEntity.ok().build();
     }
