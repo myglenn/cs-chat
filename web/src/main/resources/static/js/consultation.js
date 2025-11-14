@@ -138,7 +138,12 @@ async function openDmModal() {
 
     const modalContent = document.createElement('div');
     modalContent.className = 'modal-content';
-    modalContent.style.height = '75svh';
+
+    if (window.innerWidth <= 767) {
+        modalContent.style.height = '100svh';
+    } else {
+        modalContent.style.height = '75svh';
+    }
 
 
     const closeBtn = createElementSafe('button', {
